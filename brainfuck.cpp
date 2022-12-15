@@ -3,6 +3,7 @@
 #include <string.h>
 #include <vector>
 #include <functional>
+#include <string>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <conio.h>
@@ -78,14 +79,14 @@ char *string_format(const char *__msg, const REST &...args)
 
 enum Exceptions
 {
-    SyntaxError = 1,
+    Exception = 1,
+    SyntaxError,
     MemoryOverflow,
     MemoryUnderflow,
     PointerOverflow,
     PointerUnderflow,
     IOError,
-    InternalError,
-    Exception
+    InternalError
 };
 
 constexpr const char *exception_to_string(Exceptions e) throw()
