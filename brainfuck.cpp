@@ -150,6 +150,7 @@ public:
 Traceback __tb;
 
 class Structure;
+class Program;
 
 std::vector<Structure *> structers;
 
@@ -161,14 +162,16 @@ struct STR_DATA
     std::vector<STR_DATA> inner;
 };
 
-using checkfunc = STR_DATA(size_t, const char *);
+using check_func = STR_DATA(size_t, const char *);
 using detect_func = std::function<bool(STR_DATA *)>;
+using react_func = std::function<void(Program *, STR_DATA *)>;
 
 std::vector<STR_DATA> src;
 
 class Structure
 {
-    checkfunc *__checker;
+    check_func *__checker;
+    react_func __reacter;
 
 public:
     std::vector<STR_DATA> tree;
@@ -216,14 +219,30 @@ public:
     }
 
     Structure(const char *__src);
-    Structure(const char *__name, checkfunc *__checker) : name(__name)
+    Structure(const char *__name, check_func *__checker, react_func __reacter) : name(__name)
     {
         this->__checker = __checker;
+        this->__reacter = __reacter;
         structers.push_back(this);
+    }
+
+    void run(Program *program, STR_DATA *str){
+        this->__reacter(program, str);
     }
 };
 
-bool is_main_struct = true;
+class Program
+{
+    public:
+    std::vector<uint8_t> memory = {0};
+    std::vector<size_t> pointers = {0};
+    size_t selected_pointer = 0;
+    Program(std::vector<STR_DATA> main_struct){
+        for(size_t i = 0; i < main_struct.size(); i++){
+            main_struct[i].type->run(this, &main_struct[i]);
+        }
+    }
+};
 
 Structure ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -231,7 +250,9 @@ Structure ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &ADD};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        program->memory[program->pointers[program->selected_pointer]]++;
+    });
 
 Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -239,7 +260,9 @@ Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &SUB};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        program->memory[program->pointers[program->selected_pointer]]--;
+    });
 
 Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -247,7 +270,14 @@ Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &LFT};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        if(program->pointers[program->selected_pointer] <= 0){
+            line_addr adder = __line_adder->get_line(str->start + 1);
+            __tb.raise(MemoryUnderflow, string_format("out of range at %i:%i", adder.line, adder.offset));
+            return;
+        }
+        program->pointers[program->selected_pointer]--;
+    });
 
 Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -255,7 +285,17 @@ Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &RGT};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        if(program->pointers[program->selected_pointer] >= program->memory.max_size() - 1){
+            line_addr adder = __line_adder->get_line(str->start + 1);
+            __tb.raise(MemoryOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
+            return;
+        }
+        program->pointers[program->selected_pointer]++;
+        while(program->pointers[program->selected_pointer] >= program->memory.size()){
+            program->memory.push_back(0);
+        }
+    });
 
 Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -263,7 +303,9 @@ Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &INP};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        program->memory[program->pointers[program->selected_pointer]] = readKey();
+    });
 
 Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -271,7 +313,9 @@ Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &OUT};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        std::cout << program->memory[program->pointers[program->selected_pointer]];
+    });
 
 Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DATA
                     {
@@ -279,7 +323,17 @@ Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DA
         return {__index, __index, &N_POINTER};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        if(program->selected_pointer >= program->pointers.max_size() - 1){
+            line_addr adder = __line_adder->get_line(str->start + 1);
+            __tb.raise(PointerOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
+            return;
+        }
+        while(program->selected_pointer >= program->pointers.size()){
+            program->pointers.push_back(program->pointers[program->selected_pointer]);
+        }
+        program->selected_pointer++;
+    });
 
 Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DATA
                     {
@@ -287,7 +341,14 @@ Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DA
         return {__index, __index, &P_POINTER};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        if(program->selected_pointer <= 0){
+            line_addr adder = __line_adder->get_line(str->start + 1);
+            __tb.raise(PointerUnderflow, string_format("out of range at %i:%i", adder.line, adder.offset));
+            return;
+        }
+        program->selected_pointer--;
+    });
 
 Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                    {
@@ -295,7 +356,7 @@ Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &END_LOOP, true};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){});
 
 Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                            {
@@ -303,7 +364,7 @@ Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__
         return {__index, __index, &END_POINTER_LOOP, true};
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){});
 
 Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
@@ -335,7 +396,15 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
 
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        STR_DATA aloc;
+        while(program->memory[program->pointers[program->selected_pointer]]){
+            for(size_t i = 0; i < str->inner.size(); i++){
+                aloc = str->inner[i];
+                str->inner[i].type->run(program, &aloc);
+            }
+        }
+    });
 
 Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                        {
@@ -367,7 +436,15 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
         return res;
     }else{
         return {};
-    } });
+    } }, [](Program *program, STR_DATA *str){
+        STR_DATA aloc;
+        while(program->pointers[program->selected_pointer]){
+            for(size_t i = 0; i < str->inner.size(); i++){
+                aloc = str->inner[i];
+                str->inner[i].type->run(program, &aloc);
+            }
+        }
+    });
 
 Structure::Structure(const char *__src)
 {
