@@ -238,13 +238,15 @@ class Program
     public:
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
+    size_t memory_size = memory.max_size();
+    size_t len_of_pointers = pointers.max_size();
     size_t selected_pointer = 0;
     Program(std::vector<STR_DATA> main_struct, size_t memory_size = 0, size_t len_of_pointers = 0){
         if(memory_size){
-            memory.resize(memory_size);
+            this->memory_size = memory_size;
         }
         if(len_of_pointers){
-            pointers.resize(len_of_pointers);
+            this->len_of_pointers = len_of_pointers;
         }
         for(size_t i = 0; i < main_struct.size(); i++){
             main_struct[i].type->run(this, &main_struct[i]);
@@ -294,7 +296,7 @@ Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Program *program, STR_DATA *str){
-        if(program->pointers[program->selected_pointer] >= program->memory.max_size() - 1){
+        if(program->pointers[program->selected_pointer] >= program->memory_size - 1){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(MemoryOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
@@ -332,15 +334,15 @@ Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DA
     }else{
         return {};
     } }, [](Program *program, STR_DATA *str){
-        if(program->selected_pointer >= program->pointers.max_size() - 1){
+        if(program->selected_pointer >= program->len_of_pointers - 1){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(PointerOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
         }
-        while(program->selected_pointer >= program->pointers.size()){
-            program->pointers.push_back(program->pointers[program->selected_pointer]);
-        }
         program->selected_pointer++;
+        while(program->selected_pointer >= program->pointers.size()){
+            program->pointers.push_back(program->pointers[program->selected_pointer-1]);
+        }
     });
 
 Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DATA
@@ -536,9 +538,9 @@ int main(int argc, char const *argv[])
         }
     }
     std::ifstream file;
-    try{
-        file.open(filename, std::ifstream::in | std::ifstream::ate);
-    }catch(std::ios_base::failure& e){
+    file.open(filename, std::ifstream::in | std::ifstream::ate);
+
+    if(file.fail()){
         __tb.raise(IOError, string_format("can't open '%s': %s", filename, strerror(errno)));
         return IOError;
     }
@@ -556,6 +558,6 @@ int main(int argc, char const *argv[])
     }
     file.close();
     Structure main_struct((const char *)code);
-    Program program(main_struct.tree);
+    Program program(main_struct.tree, memory_size, pointer_size);
     return 0;
 }
