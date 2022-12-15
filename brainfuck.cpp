@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <fstream>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <conio.h>
@@ -238,7 +239,13 @@ class Program
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
     size_t selected_pointer = 0;
-    Program(std::vector<STR_DATA> main_struct){
+    Program(std::vector<STR_DATA> main_struct, size_t memory_size = 0, size_t len_of_pointers = 0){
+        if(memory_size){
+            memory.resize(memory_size);
+        }
+        if(len_of_pointers){
+            pointers.resize(len_of_pointers);
+        }
         for(size_t i = 0; i < main_struct.size(); i++){
             main_struct[i].type->run(this, &main_struct[i]);
         }
@@ -465,5 +472,90 @@ Structure::Structure(const char *__src)
 
 int main(int argc, char const *argv[])
 {
+    if (argc < 2)
+    {
+        std::string app_name = argv[0];
+        app_name = app_name.substr(app_name.find_last_of("/") + 1);
+        std::cout << "Usage: " << app_name << " <file> [OPTIONS]" << std::endl;
+        std::cout << "Options:" << std::endl;
+        std::cout << "  -m <size>   Set memory size" << std::endl;
+        std::cout << "  -p <size>   Set pointer size" << std::endl;
+        return Exception;
+    }
+    char const *filename = argv[1];
+    const char *ext = std::string(filename).substr(std::string(filename).find_last_of(".") + 1).c_str();
+    if (strcmp(ext, "bf") != 0 && strcmp(ext, "b") != 0)
+    {
+        __tb.raise(Exception, "invalid file extension");
+        return Exception;
+    }
+    size_t memory_size = 0;
+    size_t pointer_size = 0;
+    for (int i = 2; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-m") == 0)
+        {
+            try
+            {
+                memory_size = std::stoi(argv[i + 1]);
+                if (memory_size == 0)
+                {
+                    __tb.raise(Exception, "memory size must be greater than 0");
+                    return Exception;
+                }
+            }
+            catch (...)
+            {
+                __tb.raise(Exception, "invalid memory size");
+                return Exception;
+            }
+            i++;
+        }
+        else if (strcmp(argv[i], "-p") == 0)
+        {
+            try
+            {
+                pointer_size = std::stoi(argv[i + 1]);
+                if (pointer_size == 0)
+                {
+                    __tb.raise(Exception, "pointer size must be greater than 0");
+                    return Exception;
+                }
+            }
+            catch (...)
+            {
+                __tb.raise(Exception, "invalid pointer size");
+                return Exception;
+            }
+            i++;
+        }
+        else
+        {
+            __tb.raise(Exception, string_format("invalid argument '%s'", argv[i]));
+            return Exception;
+        }
+    }
+    std::ifstream file;
+    try{
+        file.open(filename, std::ifstream::in | std::ifstream::ate);
+    }catch(std::ios_base::failure& e){
+        __tb.raise(IOError, string_format("can't open '%s': %s", filename, strerror(errno)));
+        return IOError;
+    }
+    char *code = (char *)malloc(file.tellg() * sizeof(char));
+    file.seekg(0);
+    char c;
+    size_t index = 0;
+    while (file >> c)
+    {
+        if (c != '\r')
+        {
+            code[index] = c;
+        }
+        index++;
+    }
+    file.close();
+    Structure main_struct((const char *)code);
+    Program program(main_struct.tree);
     return 0;
 }
