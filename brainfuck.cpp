@@ -548,9 +548,10 @@ int main(int argc, char const *argv[])
     file.seekg(0);
     char c;
     size_t index = 0;
-    while (file >> c)
+    while (!file.eof())
     {
-        if (c != '\r')
+        file.read(&c, 1);
+        if(c != '\r')
         {
             code[index] = c;
         }
