@@ -548,14 +548,18 @@ int main(int argc, char const *argv[])
     file.seekg(0);
     char c;
     size_t index = 0;
-    while (!file.eof())
+    while (true)
     {
         file.read(&c, 1);
-        if(c != '\r')
-        {
-            code[index] = c;
+        if(!file.eof()){
+            if(c != '\r')
+            {
+                code[index] = c;
+            }
+            index++;
+        }else{
+            break;
         }
-        index++;
     }
     file.close();
     Structure main_struct((const char *)code);
