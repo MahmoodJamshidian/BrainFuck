@@ -25,7 +25,7 @@ Which of these goals have been completed?
 
 - ### Rebuilding the compiler
   We know that all programming languages each have their own structure and no programming language is irregular.
-  Before I created this repository, I had written a compiler, but it had development problems, because I did not pay attention to the fact that the structures should be defined and then processed. That is, in this way: open the source file, scroll over its characters and if its value is equal to ( **`+`** ), do a certain thing, if it is ( **`-`** ), do a certain thing and...
+  Before I created this repository, I had written a compiler, but it had development problems, because I did not pay attention to the fact that the structures should be defined and then processed. That is, in this way: open the source file, scroll over its characters and if its value is equal to **`+`**, do a certain thing, if it is **`-`**, do a certain thing and...
   
   I encountered many problems in this method, and one of the biggest problems was that it gave a syntax error at runtime and not at compile time, and this is not true at all.
 
@@ -40,7 +40,7 @@ Which of these goals have been completed?
 - ### Pointer System
   One of the problems I faced while writing a small program with this programming language was the problem of moving between memory cells.
   
-  When you want to move between memory houses, you use two characters ( **`<`** ) and ( **`>`** ). But consider that you have to write a program that takes a long input from the user, but you can't. If you have doubts, you can try this! If you succeeded, I congratulate you, but take a look at the code you typed, you just wasted your time! But you have to look for a solution.
+  When you want to move between memory houses, you use two characters **`<`** and **`>`**. But consider that you have to write a program that takes a long input from the user, but you can't. If you have doubts, you can try this! If you succeeded, I congratulate you, but take a look at the code you typed, you just wasted your time! But you have to look for a solution.
   
   The idea that came to my mind was to use the pointer system. Each of the pointers can point to a part of the memory and it can be specified where each one points to in the memory.
   
@@ -50,7 +50,7 @@ Which of these goals have been completed?
   - **`{`** : open pointer loop
   - **`}`** : close pointer loop
   
-  next pointer ( **`/`** ) and pre pre pointer ( **`\`** ) to select pointer and switch between them.
+  next pointer **`/`** and pre pre pointer **`\`** to select pointer and switch between them.
 
   > NOTE: when you go to the next pointer and there is no pointer, a new pointer is created, and the new pointer is placed in the position of the previous pointer. This means that the new pointer points to a part of the memory that the previous pointer points to
 
