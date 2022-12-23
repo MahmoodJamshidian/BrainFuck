@@ -35,7 +35,7 @@ Which of these goals have been completed?
 
   Summary. So far all the main commands and structures have been added to the compiler
 
-  > NOTE: the amount of memory and the number of pointers can be controlled with the -m (amount of memory) and -p (number of pointers) options (which are usually unlimited). When more memory is needed, you will encounter MemoryOverflow error and when more pointers are needed, you will encounter PointerOverflow error.
+  > **NOTE**: the amount of memory and the number of pointers can be controlled with the -m (amount of memory) and -p (number of pointers) options (which are usually unlimited). When more memory is needed, you will encounter MemoryOverflow error and when more pointers are needed, you will encounter PointerOverflow error.
 
 - ### Pointer System
   One of the problems I faced while writing a small program with this programming language was the problem of moving between memory cells.
@@ -52,7 +52,7 @@ Which of these goals have been completed?
   
   next pointer **`/`** and pre pre pointer **`\`** to select pointer and switch between them.
 
-  > NOTE: when you go to the next pointer and there is no pointer, a new pointer is created, and the new pointer is placed in the position of the previous pointer. This means that the new pointer points to a part of the memory that the previous pointer points to
+  > **NOTE**: when you go to the next pointer and there is no pointer, a new pointer is created, and the new pointer is placed in the position of the previous pointer. This means that the new pointer points to a part of the memory that the previous pointer points to
 
   **`{`** and **`}`** characters are used for pointer loop
   
