@@ -167,6 +167,7 @@ struct STR_DATA
 using check_func = STR_DATA(size_t, const char *);
 using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
+using signal_func = std::function<void()>;
 
 std::vector<STR_DATA> src;
 
@@ -235,6 +236,8 @@ public:
 
 class Environment
 {
+    std::vector<signal_func> sig_handlers;
+    std::vector<STR_DATA> main_struct;
     public:
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
@@ -249,6 +252,17 @@ class Environment
         if(len_of_pointers){
             this->len_of_pointers = len_of_pointers;
         }
+        this->main_struct = main_struct;
+    }
+    void add_signal(signal_func handler)
+    {
+        sig_handlers.push_back(handler);
+    }
+    void signal(uint8_t sig)
+    {
+        if(sig_handlers.size() > sig) sig_handlers.at(sig)();
+    }
+    void run(){
         for(size_t i = 0; i < main_struct.size(); i++){
             main_struct[i].type->run(this, &main_struct[i]);
         }
@@ -377,6 +391,14 @@ Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__
         return {};
     } }, [](Environment *env, STR_DATA *str){});
 
+Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
+                   {
+    if(__src[__index] == ')'){
+        return {__index, __index, &END_PART, true};
+    }else{
+        return {};
+    } }, [](Environment *env, STR_DATA *str){});
+
 Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
     if(__src[__index] == '['){
@@ -387,13 +409,18 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
         STR_DATA res = {_start};
         res.type = &LOOP;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_LOOP){
+            if(__str->type == &END_POINTER_LOOP){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
+                return false;
+            }else if(__str->type == &END_PART){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
+                return false;
+            }else if(__str->type == &END_LOOP){
                 _end = __str->end;
                 is_ended = true;
                 return true;
-            }else if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
             }
             return false;
         });
@@ -431,6 +458,10 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
                 adder = __line_adder->get_line(__str->start+1);
                 __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
                 return false;
+            }else if(__str->type == &END_PART){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
+                return false;
             }else if(__str->type == &END_POINTER_LOOP){
                 _end = __str->end;
                 is_ended = true;
@@ -457,6 +488,67 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
         }
     });
 
+Structure RET("RET", [](size_t __index, const char *__src) -> STR_DATA
+                   {
+    if(__src[__index] == '&'){
+        return {__index, __index, &RET};
+    }else{
+        return {};
+    } }, [](Environment *env, STR_DATA *str){
+        env->signal(0);
+    });
+
+Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
+                   {
+    if(__src[__index] == '('){
+        size_t _start = __index, _end;
+        bool is_ended = false;
+        line_addr adder;
+
+        STR_DATA res = {_start};
+        res.type = &PART;
+        res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
+            if(__str->type == &END_LOOP){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
+                return false;
+            }else if(__str->type == &END_POINTER_LOOP){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
+                return false;
+            }else if(__str->type == &END_PART){
+                _end = __str->end;
+                is_ended = true;
+                return true;
+            }
+            return false;
+        });
+        if(!is_ended){
+            adder = __line_adder->get_line(__index+1);
+            __tb.raise(SyntaxError, string_format("Missing ')' at %i:%i", adder.line, adder.offset));
+            return {};
+        }
+        res.end = _end;
+        return res;
+    }else{
+        return {};
+    } }, [](Environment *env, STR_DATA *str){
+        STR_DATA aloc;
+        Environment venv(str->inner);
+        venv.memory = env->memory;
+        venv.pointers = env->pointers;
+        venv.selected_pointer = env->selected_pointer;
+        venv.functions = env->functions;
+        venv.memory_size = env->memory_size;
+        venv.len_of_pointers = env->len_of_pointers;
+        venv.add_signal([&](){
+            while(venv.pointers[venv.selected_pointer] >= env->memory.size())
+                env->memory.push_back(0);
+            env->memory[venv.pointers[venv.selected_pointer]] = venv.memory[venv.pointers[venv.selected_pointer]];
+        });
+        venv.run();
+    });
+
 Structure::Structure(const char *__src)
 {
     __line_adder = new LineAddr((char *)__src);
@@ -465,10 +557,13 @@ Structure::Structure(const char *__src)
                                 {
             if(__str->type == &END_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
+                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
             }else if(__str->type == &END_POINTER_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
                 __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
+            }else if(__str->type == &END_PART){
+                adder = __line_adder->get_line(__str->start+1);
+                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
             }
             return false; });
 }
@@ -565,5 +660,6 @@ int main(int argc, char const *argv[])
     file.close();
     Structure main_struct((const char *)code);
     Environment program(main_struct.tree, memory_size, pointer_size);
+    program.run();
     return 0;
 }
