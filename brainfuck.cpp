@@ -152,7 +152,7 @@ public:
 Traceback __tb;
 
 class Structure;
-class Program;
+class Environment;
 
 std::vector<Structure *> structers;
 
@@ -166,7 +166,7 @@ struct STR_DATA
 
 using check_func = STR_DATA(size_t, const char *);
 using detect_func = std::function<bool(STR_DATA *)>;
-using react_func = std::function<void(Program *, STR_DATA *)>;
+using react_func = std::function<void(Environment *, STR_DATA *)>;
 
 std::vector<STR_DATA> src;
 
@@ -228,20 +228,21 @@ public:
         structers.push_back(this);
     }
 
-    void run(Program *program, STR_DATA *str){
-        this->__reacter(program, str);
+    void run(Environment *env, STR_DATA *str){
+        this->__reacter(env, str);
     }
 };
 
-class Program
+class Environment
 {
     public:
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
+    std::vector<Environment> functions;
     size_t memory_size = memory.max_size();
     size_t len_of_pointers = pointers.max_size();
     size_t selected_pointer = 0;
-    Program(std::vector<STR_DATA> main_struct, size_t memory_size = 0, size_t len_of_pointers = 0){
+    Environment(std::vector<STR_DATA> main_struct, size_t memory_size = 0, size_t len_of_pointers = 0){
         if(memory_size){
             this->memory_size = memory_size;
         }
@@ -260,8 +261,8 @@ Structure ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &ADD};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        program->memory[program->pointers[program->selected_pointer]]++;
+    } }, [](Environment *env, STR_DATA *str){
+        env->memory[env->pointers[env->selected_pointer]]++;
     });
 
 Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
@@ -270,8 +271,8 @@ Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &SUB};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        program->memory[program->pointers[program->selected_pointer]]--;
+    } }, [](Environment *env, STR_DATA *str){
+        env->memory[env->pointers[env->selected_pointer]]--;
     });
 
 Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
@@ -280,13 +281,13 @@ Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &LFT};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        if(program->pointers[program->selected_pointer] <= 0){
+    } }, [](Environment *env, STR_DATA *str){
+        if(env->pointers[env->selected_pointer] <= 0){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(MemoryUnderflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
         }
-        program->pointers[program->selected_pointer]--;
+        env->pointers[env->selected_pointer]--;
     });
 
 Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
@@ -295,15 +296,15 @@ Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &RGT};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        if(program->pointers[program->selected_pointer] >= program->memory_size - 1){
+    } }, [](Environment *env, STR_DATA *str){
+        if(env->pointers[env->selected_pointer] >= env->memory_size - 1){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(MemoryOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
         }
-        program->pointers[program->selected_pointer]++;
-        while(program->pointers[program->selected_pointer] >= program->memory.size()){
-            program->memory.push_back(0);
+        env->pointers[env->selected_pointer]++;
+        while(env->pointers[env->selected_pointer] >= env->memory.size()){
+            env->memory.push_back(0);
         }
     });
 
@@ -313,8 +314,8 @@ Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &INP};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        program->memory[program->pointers[program->selected_pointer]] = readKey();
+    } }, [](Environment *env, STR_DATA *str){
+        env->memory[env->pointers[env->selected_pointer]] = readKey();
     });
 
 Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
@@ -323,8 +324,8 @@ Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &OUT};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        std::cout << program->memory[program->pointers[program->selected_pointer]];
+    } }, [](Environment *env, STR_DATA *str){
+        std::cout << env->memory[env->pointers[env->selected_pointer]];
     });
 
 Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DATA
@@ -333,15 +334,15 @@ Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DA
         return {__index, __index, &N_POINTER};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        if(program->selected_pointer >= program->len_of_pointers - 1){
+    } }, [](Environment *env, STR_DATA *str){
+        if(env->selected_pointer >= env->len_of_pointers - 1){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(PointerOverflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
         }
-        program->selected_pointer++;
-        while(program->selected_pointer >= program->pointers.size()){
-            program->pointers.push_back(program->pointers[program->selected_pointer-1]);
+        env->selected_pointer++;
+        while(env->selected_pointer >= env->pointers.size()){
+            env->pointers.push_back(env->pointers[env->selected_pointer-1]);
         }
     });
 
@@ -351,13 +352,13 @@ Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DA
         return {__index, __index, &P_POINTER};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
-        if(program->selected_pointer <= 0){
+    } }, [](Environment *env, STR_DATA *str){
+        if(env->selected_pointer <= 0){
             line_addr adder = __line_adder->get_line(str->start + 1);
             __tb.raise(PointerUnderflow, string_format("out of range at %i:%i", adder.line, adder.offset));
             return;
         }
-        program->selected_pointer--;
+        env->selected_pointer--;
     });
 
 Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
@@ -366,7 +367,7 @@ Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &END_LOOP, true};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){});
+    } }, [](Environment *env, STR_DATA *str){});
 
 Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                            {
@@ -374,7 +375,7 @@ Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__
         return {__index, __index, &END_POINTER_LOOP, true};
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){});
+    } }, [](Environment *env, STR_DATA *str){});
 
 Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
@@ -406,12 +407,12 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
 
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
+    } }, [](Environment *env, STR_DATA *str){
         STR_DATA aloc;
-        while(program->memory[program->pointers[program->selected_pointer]]){
+        while(env->memory[env->pointers[env->selected_pointer]]){
             for(size_t i = 0; i < str->inner.size(); i++){
                 aloc = str->inner[i];
-                str->inner[i].type->run(program, &aloc);
+                str->inner[i].type->run(env, &aloc);
             }
         }
     });
@@ -446,12 +447,12 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
         return res;
     }else{
         return {};
-    } }, [](Program *program, STR_DATA *str){
+    } }, [](Environment *env, STR_DATA *str){
         STR_DATA aloc;
-        while(program->pointers[program->selected_pointer]){
+        while(env->pointers[env->selected_pointer]){
             for(size_t i = 0; i < str->inner.size(); i++){
                 aloc = str->inner[i];
-                str->inner[i].type->run(program, &aloc);
+                str->inner[i].type->run(env, &aloc);
             }
         }
     });
@@ -563,6 +564,6 @@ int main(int argc, char const *argv[])
     }
     file.close();
     Structure main_struct((const char *)code);
-    Program program(main_struct.tree, memory_size, pointer_size);
+    Environment program(main_struct.tree, memory_size, pointer_size);
     return 0;
 }
