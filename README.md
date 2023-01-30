@@ -3,7 +3,7 @@ BrainFuck Programming Language
 
 BrainFuck is originally a very low-level programming language created by Urban Müller in 1993.
 
-This language is not made for programming and implementing real projects and is only for programmers' entertainment.
+This language is not made for programming and implementing real projects and is only for programmers entertainment.
 This programming language works on memory houses of RAM and (typically) uses only 8 characters **`+`** , **`-`** , **`>`** , **`<`** , **`[`** , **`]`** , **`.`** , **`,`** .
 
 read more from [wikipedia](https://en.wikipedia.org/wiki/Brainfuck).
@@ -17,6 +17,7 @@ What are the development goals?
 
 - Rebuilding the compiler
 - Pointer System
+- Virtualization System
 - Function definition system, storage and use
 - Debug System
 
@@ -146,6 +147,59 @@ Which of these goals have been completed?
   When you run this code, it will ask you for a code with four characters, and when you enter it, the entered code will be compared with the original code, and if the code is correct, "YOU WIN!" It is printed on the screen and otherwise the value "you lose!" It is printed and then it prints the correct number of characters.
 
   The code is "1234" defined in [line 1](examples/gest_passwd.bf#L1).
+
+- ### Virtualization System (PART mechanism)
+
+  One of the problems that made brainfuck programs complicated and difficult was their relocation, for example, pay attention to this small example:
+  We want to store the data in the bytes indexed 0, 1, 2, 3 with the value of 65, but that's not all! The maximum space we have is 4 bytes!
+  We can do this in the usual way:
+
+  ```brainfuck
+  ++++++[>+++++++++++<-]>-
+  [<+>->+>+<<]
+  ++++++++++++++++++++++
+  +++++++++++++++++++++
+  +++++++++++++++++++++
+  ```
+
+  This program does this, but in the last part, the number of + characters is too much! Why should the code be like this?
+  Well, this is the bad mode we mentioned above. Next, I will explain how this program works:
+  In this program, the value of 6 is stored in byte index 0, then it is looped and every time it is subtracted from it and 11 is added to the next byte value, finally the value of byte index 1 is equal to 66 and one is subtracted from it. which becomes 65.
+
+  so the memory will look like this:
+
+  | index | 0 | 1 | 2 | 3 |
+  |-------|---|---|---|---|
+  | value | 0 | 65| 0 | 0 |
+
+  Next, the value of the index 1 is circled and subtracted from it and added to the indices 0, 2 and 3, and it looks like this:
+
+  | index | 0 | 1 | 2 | 3 |
+  |-------|---|---|---|---|
+  | value | 65| 0 | 65| 65|
+
+  Only index 1 is left to change its value to 65, but how can do it? If we want to copy the value of another one of these indices, its value will be zero and this loop will continue, so we have to manually adjust its value and finally the value of all memory values will be 65 *(this happens for all amounts of memory)*.
+
+  In this method, four new characters were added to this language:
+  - **`&`** : return value
+  - **`(`** : open part
+  - **`)`** : close part
+  
+  To use this option, you must put the code you want to simulate inside the open parenthesis and the closed parenthesis and use the **`&`** character to place the value of that part on the main memory.
+
+  > **NOTE**: you can use them nested and you cannot change the movement of pointers and selection pointer inside PART
+
+  this is a rewritten program above using PART:
+
+  ```brainfuck
+  ++++++[>+++++++++++<-]>-
+  ([<+&>->+&>+&<<])
+  ```
+
+  We were able to easily solve this problem.
+  
+  By using this option, you can better control your memory and solve many complex problems more easily
+
 
 The End
 -------
