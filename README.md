@@ -36,7 +36,7 @@ Which of these goals have been completed?
 
   Summary. So far all the main commands and structures have been added to the compiler
 
-  > **NOTE**: In the previous versions ([v0.1](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.1) and [v0.2](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.2)), there were -m and -p options that specified the maximum memory limit and the maximum number of pointers, but due to the addition of the function, these options were removed.
+  > **NOTE**: In the previous versions ([v0.1](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.1) and [v0.2](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.2)), there were `-m` and `-p` options that specified the maximum memory limit and the maximum number of pointers, but due to the addition of the function, these options were removed.
 
 - ### Pointer System
   One of the problems I faced while writing a small program with this programming language was the problem of moving between memory cells.
