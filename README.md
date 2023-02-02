@@ -180,7 +180,7 @@ Which of these goals have been completed?
 
   Only index 1 is left to change its value to 65, but how can do it? If we want to copy the value of another one of these indices, its value will be zero and this loop will continue, so we have to manually adjust its value and finally the value of all memory values will be 65 *(this happens for all amounts of memory)*.
 
-  In this method, four new characters were added to this language:
+  In this method, three new characters were added to this language:
   - **`&`** : return value
   - **`(`** : open part
   - **`)`** : close part
