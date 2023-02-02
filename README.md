@@ -200,7 +200,7 @@ Which of these goals have been completed?
   
   By using this option, you can better control your memory and solve many complex problems more easily
 
-- ### Function definition system
+- ### Functional System
   
   In all programming languages, repeating a piece of code is a normal thing, and to prevent this from happening, functions are used. But in BrainFuck, it's not just repetition, because if you copy a piece of code from another place and paste it in another place, your program may have problems, because the memory is managed directly. So therefore we need function structure in BrainFuck.
 
