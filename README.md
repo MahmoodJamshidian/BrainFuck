@@ -18,7 +18,7 @@ What are the development goals?
 - Rebuilding the compiler
 - Pointer System
 - Virtualization System
-- Function definition system, storage and use
+- Functional System
 - Debug System
 
 Which of these goals have been completed?
@@ -36,7 +36,7 @@ Which of these goals have been completed?
 
   Summary. So far all the main commands and structures have been added to the compiler
 
-  > **NOTE**: the amount of memory and the number of pointers can be controlled with the -m (amount of memory) and -p (number of pointers) options (which are usually unlimited). When more memory is needed, you will encounter MemoryOverflow error and when more pointers are needed, you will encounter PointerOverflow error.
+  > **NOTE**: In the previous versions ([v0.1](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.1) and [v0.2](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.2)), there were -m and -p options that specified the maximum memory limit and the maximum number of pointers, but due to the addition of the function, these options were removed.
 
 - ### Pointer System
   One of the problems I faced while writing a small program with this programming language was the problem of moving between memory cells.
@@ -200,6 +200,69 @@ Which of these goals have been completed?
   
   By using this option, you can better control your memory and solve many complex problems more easily
 
+- ### Function definition system
+  
+  In all programming languages, repeating a piece of code is a normal thing, and to prevent this from happening, functions are used. But in BrainFuck, it's not just repetition, because if you copy a piece of code from another place and paste it in another place, your program may have problems, because the memory is managed directly. So therefore we need function structure in BrainFuck.
+
+  By this structure, two new characters were added to this language:
+  - **`%`** : begin and end of function definition
+  - **`$`** : begin and end of function call
+  
+  You can define function like this:
+
+  ```brainfuck
+  %your code here%
+  ```
+
+  When a function is defined, the ID of that function is stored in that part of the memory, and in order to execute the function, the value of the memory on that pointer must be equal to the ID of the function, otherwise you will encounter an Undefined error.
+
+  > **NOTE**: the ID of first function definition is 0 and second is 1 and ...
+
+  To call and pass arguments to the function:
+
+  ```brainfuck
+  $arg1&arg2&$
+  ```
+
+  > **NOTE**: all of operations inside of function call structure is virtual
+
+  > **NOTE**: The `&` character is used in the structure of the function call as the determinant of the function arguments and in the structure of the function definition as the determinant of return values.
+
+  Address the values instead of arg1 and arg2
+
+  > **NOTE**: You can pass unlimited arguments
+
+  When a function is called, its arguments are placed in the function memory like this:
+
+  | index | 0                   | 1    | 2    | ...    |
+  |-------|---------------------|------|------|--------|
+  | value | lenght of arguments | arg1 | arg2 | ...    |
+
+  You may not have understood correctly, so pay attention to the following example:
+
+  Write a program that adds two numbers 26 and 47 together using the function and stores it in index 0.
+
+  ```brainfuck
+  %[-/>\]/{[-\+/]<}&%
+  $[-]+++++[->+++++<]>+&<+++[->+++++++<]>&$
+  >[-<+>]
+  ```
+
+  In the first line, we defined a function that creates a new pointer and moves forward by the number of arguments (index 0), then enters the pointer loop, which drops all the values at index 0, and finally the value at index 0 is returned.
+
+  > **NOTE**: also, function can return any number of values
+
+  In the second line, we called the function and passed 26 and 47 values (If you noticed, in the first loop of the line, we set the value of index 0 to 0, it is true that this is the first function that we have defined and its ID is 0, but it is possible that another function is defined)
+
+  > **NOTE**: After calling the function, the return values will be placed after the pointer point in order
+
+  Well, now the value 73 is stored in index 1, and in the third line, this value is moved to index 0.
+
+  result is:
+
+  | index | 0 | 1 |
+  |-------|---|---|
+  | value | 73| 0 |
 
 The End
 -------
