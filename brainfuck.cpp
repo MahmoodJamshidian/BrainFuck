@@ -533,7 +533,6 @@ Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        STR_DATA aloc;
         Environment venv(str->inner);
         venv.memory = env->memory;
         venv.pointers = env->pointers;
@@ -679,6 +678,13 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
         env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.clear();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
     });
+
+Structure BREAK_POINT("BREAK_POINT", [](size_t __index, const char *__src) -> STR_DATA
+                   {
+    if(__src[__index] == '|'){
+
+    }
+    }, [](Environment *env, STR_DATA *str){});
 
 Structure::Structure(const char *__src)
 {
