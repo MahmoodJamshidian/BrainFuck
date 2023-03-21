@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <fstream>
+#include "path.hpp"
 
 #define INITIAL_REGISTRY_ARGS 2
 
@@ -89,6 +90,7 @@ enum Exceptions
     PointerOverflow,
     PointerUnderflow,
     Undefined,
+    CompileError,
     IOError,
     InternalError
 };
@@ -109,6 +111,8 @@ constexpr const char *exception_to_string(Exceptions e) throw()
         return "PointerUnderflow";
     case Exceptions::Undefined:
         return "Undefined";
+    case Exceptions::CompileError:
+        return "CompileError";
     case Exceptions::IOError:
         return "IOError";
     case Exceptions::InternalError:
@@ -158,7 +162,6 @@ Traceback __tb;
 
 class Structure;
 class Environment;
-class Function;
 
 std::vector<Structure *> structers;
 
@@ -178,6 +181,7 @@ struct registry
 using check_func = STR_DATA(size_t, const char *);
 using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
+using build_func = std::function<std::string(STR_DATA *)>;
 using signal_func = std::function<void()>;
 
 std::vector<STR_DATA> src;
@@ -186,6 +190,7 @@ class Structure
 {
     check_func *__checker;
     react_func __reacter;
+    build_func __builder;
 
 public:
     std::vector<STR_DATA> tree;
@@ -233,29 +238,35 @@ public:
     }
 
     Structure(const char *__src);
-    Structure(const char *__name, check_func *__checker, react_func __reacter) : name(__name)
+    Structure(const char *__name, check_func *__checker, react_func __reacter, build_func __builder) : name(__name)
     {
         this->__checker = __checker;
         this->__reacter = __reacter;
+        this->__builder = __builder;
         structers.push_back(this);
     }
 
     void run(Environment *env, STR_DATA *str){
         this->__reacter(env, str);
     }
+
+    std::string build(STR_DATA *str)
+    {
+        return this->__builder(str);
+    }
 };
 
 class Environment
 {
     std::vector<signal_func> sig_handlers;
-    std::vector<STR_DATA> main_struct;
+    STR_DATA main_struct;
     public:
     registry reg;
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
     std::vector<Environment> functions;
     size_t selected_pointer = 0;
-    Environment(std::vector<STR_DATA> main_struct){
+    Environment(STR_DATA main_struct){
         this->main_struct = main_struct;
     }
     void add_signal(signal_func handler)
@@ -267,19 +278,18 @@ class Environment
         if(sig_handlers.size() > sig) sig_handlers.at(sig)();
     }
     void run(){
-        for(size_t i = 0; i < main_struct.size(); i++){
-            main_struct[i].type->run(this, &main_struct[i]);
-        }
+        // for(size_t i = 0; i < main_struct.size(); i++){
+        //     main_struct[i].type->run(this, &main_struct[i]);
+        // }
+        main_struct.type->run(this, &main_struct);
     }
-};
-
-class Function: public Environment
-{
-    public:
-    Environment *env;
-    explicit Function(std::vector<STR_DATA> main_struct, Environment *env) : Environment(main_struct)
-    {
-        this->env = env;
+    std::string build(){
+        // std::string src;
+        // for(size_t i = 0; i < main_struct.size(); i++){
+        //     src += main_struct[i].type->build(&main_struct[i]);
+        // }
+        // return src;
+        return main_struct.type->build(&main_struct);
     }
 };
 
@@ -293,6 +303,8 @@ Structure ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]++;
+    }, [](STR_DATA *str) -> std::string{
+        return "{&ADD}";
     });
 
 Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
@@ -303,6 +315,8 @@ Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]--;
+    }, [](STR_DATA *str) -> std::string{
+        return "{&SUB}";
     });
 
 Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
@@ -318,6 +332,8 @@ Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
             return;
         }
         env->pointers[env->selected_pointer]--;
+    }, [](STR_DATA *str) -> std::string{
+        return "{&LFT}";
     });
 
 Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
@@ -331,6 +347,8 @@ Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
         while(env->pointers[env->selected_pointer] >= env->memory.size()){
             env->memory.push_back(0);
         }
+    }, [](STR_DATA *str) -> std::string{
+        return "{&RGT}";
     });
 
 Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
@@ -341,6 +359,8 @@ Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]] = readKey();
+    }, [](STR_DATA *str) -> std::string{
+        return "{&INP}";
     });
 
 Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
@@ -351,6 +371,8 @@ Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         std::cout << env->memory[env->pointers[env->selected_pointer]];
+    }, [](STR_DATA *str) -> std::string{
+        return "{&OUT}";
     });
 
 Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DATA
@@ -364,6 +386,8 @@ Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DA
         while(env->selected_pointer >= env->pointers.size()){
             env->pointers.push_back(env->pointers[env->selected_pointer-1]);
         }
+    }, [](STR_DATA *str) -> std::string{
+        return "{&N_POINTER}";
     });
 
 Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DATA
@@ -379,6 +403,8 @@ Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DA
             return;
         }
         env->selected_pointer--;
+    }, [](STR_DATA *str) -> std::string{
+        return "{&P_POINTER}";
     });
 
 Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
@@ -387,7 +413,7 @@ Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &END_LOOP, true};
     }else{
         return {};
-    } }, [](Environment *env, STR_DATA *str){});
+    } }, NULL, NULL);
 
 Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                            {
@@ -395,7 +421,7 @@ Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__
         return {__index, __index, &END_POINTER_LOOP, true};
     }else{
         return {};
-    } }, [](Environment *env, STR_DATA *str){});
+    } }, NULL, NULL);
 
 Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
                    {
@@ -403,7 +429,7 @@ Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
         return {__index, __index, &END_PART, true};
     }else{
         return {};
-    } }, [](Environment *env, STR_DATA *str){});
+    } }, NULL, NULL);
 
 Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
@@ -446,6 +472,13 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                 str->inner[i].type->run(env, &aloc);
             }
         }
+    }, [](STR_DATA *str) -> std::string{
+        std::string res = "{&LOOP,{";
+        for(size_t i = 0; i < str->inner.size(); i++){
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     });
 
 Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
@@ -488,6 +521,13 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
                 str->inner[i].type->run(env, &aloc);
             }
         }
+    }, [](STR_DATA *str) -> std::string{
+        std::string res = "{&POINTER_LOOP,{";
+        for(size_t i = 0; i < str->inner.size(); i++){
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     });
 
 Structure RET("RET", [](size_t __index, const char *__src) -> STR_DATA
@@ -498,6 +538,8 @@ Structure RET("RET", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->signal(0);
+    }, [](STR_DATA *str) -> std::string{
+        return "{&RET}";
     });
 
 Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
@@ -533,8 +575,7 @@ Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        STR_DATA aloc;
-        Environment venv(str->inner);
+        Environment venv(*str);
         venv.memory = env->memory;
         venv.pointers = env->pointers;
         venv.selected_pointer = env->selected_pointer;
@@ -545,12 +586,19 @@ Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
             env->memory[venv.pointers[venv.selected_pointer]] = venv.memory[venv.pointers[venv.selected_pointer]];
         });
         venv.run();
+    }, [](STR_DATA *str) -> std::string{
+        std::string res = "{&PART,{";
+        for(size_t i = 0; i < str->inner.size(); i++){
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     });
 
 Structure END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     return {};
-    }, [](Environment *env, STR_DATA *str){});
+    }, NULL, NULL);
 
 Structure FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
@@ -594,16 +642,23 @@ Structure FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        Environment func(str->inner);
+        Environment func(*str);
         func.functions = env->functions;
         env->functions.push_back(func);
         env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
+    }, [](STR_DATA *str) -> std::string{
+        std::string res = "{&FUNC,{";
+        for(size_t i = 0; i < str->inner.size(); i++){
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     });
 
 Structure END_CALL_FUNC("END_CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     return {};
-    }, [](Environment *env, STR_DATA *str){});
+    }, NULL, NULL);
 
 Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
@@ -655,7 +710,7 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
             line_addr adder = __line_adder->get_line(str->start);
             __tb.raise(Undefined, string_format("function Undefined at %i:%i", adder.line, adder.offset));
         }
-        Environment inner(str->inner);
+        Environment inner(*str);
         inner.memory = env->memory;
         inner.pointers = env->pointers;
         inner.selected_pointer = env->selected_pointer;
@@ -678,6 +733,13 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
         env->functions[env->memory[env->pointers[env->selected_pointer]]].run();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.clear();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
+    }, [](STR_DATA *str) -> std::string{
+        std::string res = "{&CALL_FUNC,{";
+        for(size_t i = 0; i < str->inner.size(); i++){
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     });
 
 Structure::Structure(const char *__src)
@@ -697,6 +759,21 @@ Structure::Structure(const char *__src)
                 __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
             }
             return false; });
+    this->__builder = [&](STR_DATA *str) -> std::string{
+        std::string src = "#include \"core.hpp\"\nstatic std::vector<STR_DATA> TREE = {";
+        for(size_t _ind = 0; _ind < str->inner.size(); _ind++)
+        {
+            src += str->inner[_ind].type->build(&str->inner[_ind]) + ',';
+        }
+        src += "};\n#include \"start.hpp\"";
+        return src;
+    };
+    this->__reacter = [](Environment *env, STR_DATA *str){
+        for(size_t _ind = 0; _ind < str->inner.size(); _ind++)
+        {
+            str->inner[_ind].type->run(env, &str->inner[_ind]);
+        }
+    };
 }
 
 int main(int argc, char const *argv[])
@@ -715,6 +792,72 @@ int main(int argc, char const *argv[])
         __tb.raise(Exception, "invalid file extension");
         return Exception;
     }
+    bool is_build = false;
+    std::string output = "";
+    std::string compiler = "";
+    
+    for (int i = 2; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--build") == 0 || strcmp(argv[i], "-b") == 0)
+        {
+            if (is_build)
+            {
+                __tb.raise(Exception, string_format("repeat '%s' switch", argv[i]));
+                return Exception;
+            }
+            is_build = true;
+        }
+        else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0)
+        {
+            if (output != "")
+            {
+                __tb.raise(Exception, string_format("repeated '%s' switch", argv[i]));
+                return Exception;
+            }
+            if (++i<argc)
+            {
+                output = argv[i];
+            }
+            else
+            {
+                __tb.raise(Exception, string_format("'%s' switch was ignored", argv[i-1]));
+                return Exception;
+            }
+        }
+        else if (strcmp(argv[i], "--compiler") == 0 || strcmp(argv[i], "-c") == 0)
+        {
+            if (compiler != "")
+            {
+                __tb.raise(Exception, string_format("repeated '%s' switch", argv[i]));
+                return Exception;
+            }
+            if (++i<argc)
+            {
+                compiler = argv[i];
+            }
+            else
+            {
+                __tb.raise(Exception, string_format("'%s' switch was ignored", argv[i-1]));
+                return Exception;
+            }
+        }
+        else
+        {
+            __tb.raise(Exception, string_format("invalid command '%s'", argv[i]));
+            return Exception;
+        }
+    }
+    if (!is_build && output != "")
+    {
+        __tb.raise(Exception, "switch '--output' or '-o' in run mode");
+        return Exception;
+    }
+    if (is_build && output == "")
+    {
+        output = std::string(filename).substr(0, std::string(filename).find_last_of("."));
+    }
+    if (compiler == "")
+        compiler = "g++";
     std::ifstream file;
     file.open(filename, std::ifstream::in | std::ifstream::ate);
 
@@ -744,7 +887,18 @@ int main(int argc, char const *argv[])
         reg.nreg.push_back(0);
     __src = code;
     Structure main_struct((const char *)code);
-    Environment program(main_struct.tree);
-    program.run();
+    Environment program({0, strlen(__src), &main_struct, false, main_struct.tree});
+    if (!is_build)
+        program.run();
+    else
+    {
+        std::string __bsrc = program.build();
+        std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + " -xc++ - << EOF\n" + __bsrc + "\nEOF";
+        if (system(cmd.c_str()))
+        {
+            __tb.raise(CompileError, "a compilation error occurred");
+            return CompileError;
+        }
+    }
     return 0;
 }
