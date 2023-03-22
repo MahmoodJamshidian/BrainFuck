@@ -742,13 +742,6 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
         return res;
     });
 
-Structure BREAK_POINT("BREAK_POINT", [](size_t __index, const char *__src) -> STR_DATA
-                   {
-    if(__src[__index] == '|'){
-
-    }
-    }, [](Environment *env, STR_DATA *str){});
-
 Structure::Structure(const char *__src)
 {
     __line_adder = new LineAddr((char *)__src);
