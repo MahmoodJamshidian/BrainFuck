@@ -935,7 +935,7 @@ int main(int argc, char const *argv[])
     {
         std::string __bsrc = program.build();
         std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + options + " -xc++ - << EOF\n" + __bsrc + "\nEOF";
-        bool is_worked = system(cmd.c_str());
+        bool is_worked = !system(cmd.c_str());
         std::ifstream file;
         file.open(output);
         bool is_file_exists = (bool)file;
