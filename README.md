@@ -15,16 +15,18 @@ I intend to develop this language as much as possible, just for fun and to learn
 What are the development goals?
 -------------------------------
 
-- Rebuilding the compiler
+- Rebuilding the Interpreter
 - Pointer System
 - Virtualization System
 - Functional System
+- Compiler System
 - Debug System
 
 Which of these goals have been completed?
 -----------------------------------------
 
-- ### Rebuilding the compiler
+- ### Rebuilding the Interpreter
+
   We know that all programming languages each have their own structure and no programming language is irregular.
   Before I created this repository, I had written a compiler, but it had development problems, because I did not pay attention to the fact that the structures should be defined and then processed. That is, in this way: open the source file, scroll over its characters and if its value is equal to **`+`**, do a certain thing, if it is **`-`**, do a certain thing and...
   
@@ -34,11 +36,12 @@ Which of these goals have been completed?
   
   During the build, programming languages are basically read from the source, and according to the source, structures are defined for the compiler, and it is necessary to convert those structures into machine language or to be executed by an interpreter.
 
-  Summary. So far all the main commands and structures have been added to the compiler
+  Summary. So far all the main commands and structures have been added to the interpreter
 
   > **NOTE**: In the previous versions ([v0.1](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.1) and [v0.2](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.2)), there were `-m` and `-p` options that specified the maximum memory limit and the maximum number of pointers, but due to the addition of the function, these options were removed.
 
 - ### Pointer System
+
   One of the problems I faced while writing a small program with this programming language was the problem of moving between memory cells.
   
   When you want to move between memory houses, you use two characters **`<`** and **`>`**. But consider that you have to write a program that takes a long input from the user, but you can't. If you have doubts, you can try this! If you succeeded, I congratulate you, but take a look at the code you typed, you just wasted your time! But you have to look for a solution.
@@ -62,6 +65,7 @@ Which of these goals have been completed?
   an example of a pointer system
   
   **[gest_passwd.bf](examples/gest_passwd.bf)**
+
   ```brainfuck
   +++++++[>+++++++<-]>[>+>+>+>+<<<<-]>>+>++>+++
   {<}
@@ -144,6 +148,7 @@ Which of these goals have been completed?
       >>>
   ]
   ```
+
   When you run this code, it will ask you for a code with four characters, and when you enter it, the entered code will be compared with the original code, and if the code is correct, "YOU WIN!" It is printed on the screen and otherwise the value "you lose!" It is printed and then it prints the correct number of characters.
 
   The code is "1234" defined in [line 1](examples/gest_passwd.bf#L1).
@@ -263,6 +268,22 @@ Which of these goals have been completed?
   | index | 0 | 1 |
   |-------|---|---|
   | value | 73| 0 |
+
+- ### Compiler System
+  
+  One of the topics that was very important for us was the ability to provide executive output. If you give the source file to someone and say that it is necessary to install the interpreter and use it to run the program, the client will be curious about what is inside the source and will try to read it. If you build it and give it to the customer, the customer's curiosity will decrease and the process of downloading the interpreter will be removed.
+  
+  In version [v0.4](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.4), this possibility was added to this interpreter, and you can run a brainfuck source directly and build it.
+
+  When you compile a program, basically, it turns it into a c++ code where the necessary files are included in the `include` directory and your code is also saved as `c++ structures` and compiles it.
+
+  By this possibility, several switches were added to this compiler:
+  - `-b` `--build` : Build executable file
+  - `-o <output file>` : The output path of the executable file (source path by default)
+  - `-c <c++ compiler>` : Set c++ compiler (g++ by default)
+  - `--option <option>` : Set c++ compiler options
+  
+  > **NOTE**: If you don't use the `-b` or `--build` switch, it will work as an interpreter. And if you have not used these switches and have used the rest of the switches related to the build, you will encounter an error.
 
 The End
 -------
