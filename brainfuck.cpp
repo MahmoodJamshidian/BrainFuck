@@ -278,17 +278,9 @@ class Environment
         if(sig_handlers.size() > sig) sig_handlers.at(sig)();
     }
     void run(){
-        // for(size_t i = 0; i < main_struct.size(); i++){
-        //     main_struct[i].type->run(this, &main_struct[i]);
-        // }
         main_struct.type->run(this, &main_struct);
     }
     std::string build(){
-        // std::string src;
-        // for(size_t i = 0; i < main_struct.size(); i++){
-        //     src += main_struct[i].type->build(&main_struct[i]);
-        // }
-        // return src;
         return main_struct.type->build(&main_struct);
     }
 };
