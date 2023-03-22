@@ -785,7 +785,7 @@ void show_help(char const *argv[])
 {
     std::string app_name = argv[0];
     app_name = app_name.substr(app_name.find_last_of("/") + 1);
-    std::cout << "Usage: " << app_name << " <source> [options]\nOptions:\n  -h --help\t\tShow help\n  -v --version\t\tShow version\n  (The following options are related to the build)\n  -b --build\t\tBuild executable file\n  -o <output file>\tThe output path of the executable file (source path by default)\n  -c <c++ compiler>\tSet c++ compiler (g++ by default)\n  --option <option>\tSet compiler options" << std::endl;
+    std::cout << "Usage: " << app_name << " <source> [options]\nOptions:\n  -h --help\t\tShow help\n  -v --version\t\tShow version\n  (The following options are related to the build)\n  -b --build\t\tBuild executable file\n  -o <output file>\tThe output path of the executable file (source path by default)\n  -c <c++ compiler>\tSet c++ compiler (g++ by default)\n  --option <option>\tSet c++ compiler options" << std::endl;
 }
 
 int main(int argc, char const *argv[])
