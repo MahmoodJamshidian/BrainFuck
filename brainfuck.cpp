@@ -785,7 +785,7 @@ void show_help(char const *argv[])
 {
     std::string app_name = argv[0];
     app_name = app_name.substr(app_name.find_last_of("/") + 1);
-    std::cout << "Usage: " << app_name << " <source> [options]\nOptions:\n  -h --help\t\tShow help\n  -v --version\t\tShow version\n  (The following options are related to the build)\n  -b --build\t\tBuild executable file\n  -o <output file>\tThe output path of the executable file (source path by default)\n  -c <c++ compiler>\tSet c++ compiler (g++ by default)" << std::endl;
+    std::cout << "Usage: " << app_name << " <source> [options]\nOptions:\n  -h --help\t\tShow help\n  -v --version\t\tShow version\n  (The following options are related to the build)\n  -b --build\t\tBuild executable file\n  -o <output file>\tThe output path of the executable file (source path by default)\n  -c <c++ compiler>\tSet c++ compiler (g++ by default)\n  --option <option>\tSet compiler options" << std::endl;
 }
 
 int main(int argc, char const *argv[])
@@ -815,6 +815,7 @@ int main(int argc, char const *argv[])
     bool is_build = false;
     std::string output = "";
     std::string compiler = "";
+    std::string options = "";
 
     for (int i = 2; i < argc; i++)
     {
@@ -844,7 +845,7 @@ int main(int argc, char const *argv[])
                 return Exception;
             }
         }
-        else if (strcmp(argv[i], "--compiler") == 0 || strcmp(argv[i], "-c") == 0)
+        else if (strcmp(argv[i], "-c") == 0)
         {
             if (compiler != "")
             {
@@ -861,11 +862,31 @@ int main(int argc, char const *argv[])
                 return Exception;
             }
         }
+        else if (strcmp(argv[i], "--option") == 0)
+        {
+            if (++i<argc)
+            {
+                options += " ";
+                options += argv[i];
+            }
+            else
+            {
+                __tb.raise(Exception, string_format("'%s' switch was ignored", argv[i-1]));
+                return Exception;
+            }
+        }
         else
         {
             __tb.raise(Exception, string_format("invalid command '%s'", argv[i]));
             return Exception;
         }
+    }
+    if (options == "")
+        options = " ";
+    else if (!is_build)
+    {
+        __tb.raise(Exception, "switch '--option' in run mode");
+        return Exception;
     }
     if (!is_build && output != "")
     {
@@ -913,8 +934,13 @@ int main(int argc, char const *argv[])
     else
     {
         std::string __bsrc = program.build();
-        std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + " -xc++ - << EOF\n" + __bsrc + "\nEOF";
-        if (system(cmd.c_str()))
+        std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + options + " -xc++ - << EOF\n" + __bsrc + "\nEOF";
+        system(cmd.c_str());
+        std::ifstream file;
+        file.open(output);
+        bool is_file_exists = (bool)file;
+        file.close();
+        if (!is_file_exists)
         {
             __tb.raise(CompileError, "a compilation error occurred");
             return CompileError;
