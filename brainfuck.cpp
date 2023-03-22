@@ -776,14 +776,34 @@ Structure::Structure(const char *__src)
     };
 }
 
+void show_version()
+{
+    std::cout << "BrainFuck version 0.4\nCopyright (c) 2023 Mahmood Jamshidian (MJScript)\nMIT License\n\nWritten by Mahmood Jamshidian (MJScript)\n\nread more at https://github.com/MahmoodJamshidian/BrainFuck\n";
+}
+
+void show_help(char const *argv[])
+{
+    std::string app_name = argv[0];
+    app_name = app_name.substr(app_name.find_last_of("/") + 1);
+    std::cout << "Usage: " << app_name << " <source> [options]\nOptions:\n  -h --help\t\tShow help\n  -v --version\t\tShow version\n  (The following options are related to the build)\n  -b --build\t\tBuild executable file\n  -o <output file>\tThe output path of the executable file (source path by default)\n  -c <c++ compiler>\tSet c++ compiler (g++ by default)" << std::endl;
+}
+
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
     {
-        std::string app_name = argv[0];
-        app_name = app_name.substr(app_name.find_last_of("/") + 1);
-        std::cout << "Usage: " << app_name << " <file>" << std::endl;
+        show_help(argv);
         return Exception;
+    }
+    if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)
+    {
+        show_version();
+        return 0;
+    }
+    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+    {
+        show_help(argv);
+        return 0;
     }
     char const *filename = argv[1];
     const char *ext = std::string(filename).substr(std::string(filename).find_last_of(".") + 1).c_str();
@@ -795,10 +815,10 @@ int main(int argc, char const *argv[])
     bool is_build = false;
     std::string output = "";
     std::string compiler = "";
-    
+
     for (int i = 2; i < argc; i++)
     {
-        if (strcmp(argv[i], "--build") == 0 || strcmp(argv[i], "-b") == 0)
+        if (strcmp(argv[i], "-b") == 0)
         {
             if (is_build)
             {
@@ -807,7 +827,7 @@ int main(int argc, char const *argv[])
             }
             is_build = true;
         }
-        else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0)
+        else if (strcmp(argv[i], "-o") == 0)
         {
             if (output != "")
             {
@@ -849,7 +869,7 @@ int main(int argc, char const *argv[])
     }
     if (!is_build && output != "")
     {
-        __tb.raise(Exception, "switch '--output' or '-o' in run mode");
+        __tb.raise(Exception, "switch '-o' in run mode");
         return Exception;
     }
     if (is_build && output == "")
