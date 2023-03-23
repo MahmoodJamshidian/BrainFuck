@@ -167,15 +167,15 @@ class Environment
     }
 };
 
-Structure ADD("ADD", [](Environment *env, STR_DATA *str){
+Structure S_ADD("ADD", [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]++;
     });
 
-Structure SUB("SUB", [](Environment *env, STR_DATA *str){
+Structure S_SUB("SUB", [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]--;
     });
 
-Structure LFT("LFT", [](Environment *env, STR_DATA *str){
+Structure S_LFT("LFT", [](Environment *env, STR_DATA *str){
         if(env->pointers[env->selected_pointer] <= 0){
             __tb.raise(MemoryUnderflow, "out of range");
             return;
@@ -183,29 +183,29 @@ Structure LFT("LFT", [](Environment *env, STR_DATA *str){
         env->pointers[env->selected_pointer]--;
     });
 
-Structure RGT("RGT", [](Environment *env, STR_DATA *str){
+Structure S_RGT("RGT", [](Environment *env, STR_DATA *str){
         env->pointers[env->selected_pointer]++;
         while(env->pointers[env->selected_pointer] >= env->memory.size()){
             env->memory.push_back(0);
         }
     });
 
-Structure INP("INP", [](Environment *env, STR_DATA *str){
+Structure S_INP("INP", [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]] = readKey();
     });
 
-Structure OUT("OUT", [](Environment *env, STR_DATA *str){
+Structure S_OUT("OUT", [](Environment *env, STR_DATA *str){
         std::cout << env->memory[env->pointers[env->selected_pointer]];
     });
 
-Structure N_POINTER("N_POINTER", [](Environment *env, STR_DATA *str){
+Structure S_N_POINTER("N_POINTER", [](Environment *env, STR_DATA *str){
         env->selected_pointer++;
         while(env->selected_pointer >= env->pointers.size()){
             env->pointers.push_back(env->pointers[env->selected_pointer-1]);
         }
     });
 
-Structure P_POINTER("P_POINTER", [](Environment *env, STR_DATA *str){
+Structure S_P_POINTER("P_POINTER", [](Environment *env, STR_DATA *str){
         if(env->selected_pointer <= 0){
             __tb.raise(PointerUnderflow, "out of range");
             return;
@@ -213,7 +213,7 @@ Structure P_POINTER("P_POINTER", [](Environment *env, STR_DATA *str){
         env->selected_pointer--;
     });
 
-Structure LOOP("LOOP", [](Environment *env, STR_DATA *str){
+Structure S_LOOP("LOOP", [](Environment *env, STR_DATA *str){
         STR_DATA aloc;
         while(env->memory[env->pointers[env->selected_pointer]]){
             for(size_t i = 0; i < str->inner.size(); i++){
@@ -223,7 +223,7 @@ Structure LOOP("LOOP", [](Environment *env, STR_DATA *str){
         }
     });
 
-Structure POINTER_LOOP("POINTER_LOOP", [](Environment *env, STR_DATA *str){
+Structure S_POINTER_LOOP("POINTER_LOOP", [](Environment *env, STR_DATA *str){
         STR_DATA aloc;
         while(env->pointers[env->selected_pointer]){
             for(size_t i = 0; i < str->inner.size(); i++){
@@ -233,11 +233,11 @@ Structure POINTER_LOOP("POINTER_LOOP", [](Environment *env, STR_DATA *str){
         }
     });
 
-Structure RET("RET", [](Environment *env, STR_DATA *str){
+Structure S_RET("RET", [](Environment *env, STR_DATA *str){
         env->signal(0);
     });
 
-Structure PART("PART", [](Environment *env, STR_DATA *str){
+Structure S_PART("PART", [](Environment *env, STR_DATA *str){
         Environment venv(str->inner);
         venv.memory = env->memory;
         venv.pointers = env->pointers;
@@ -251,14 +251,14 @@ Structure PART("PART", [](Environment *env, STR_DATA *str){
         venv.run();
     });
 
-Structure FUNC("FUNC", [](Environment *env, STR_DATA *str){
+Structure S_FUNC("FUNC", [](Environment *env, STR_DATA *str){
         Environment func(str->inner);
         func.functions = env->functions;
         env->functions.push_back(func);
         env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
     });
 
-Structure CALL_FUNC("CALL_FUNC", [](Environment *env, STR_DATA *str){
+Structure S_CALL_FUNC("CALL_FUNC", [](Environment *env, STR_DATA *str){
         if(env->memory[env->pointers[env->selected_pointer]] >= env->functions.size()){
             __tb.raise(Undefined, "function Undefined");
         }

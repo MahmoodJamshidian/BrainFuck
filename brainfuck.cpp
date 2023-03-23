@@ -287,34 +287,34 @@ class Environment
 
 char *__src;
 
-Structure ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == '+'){
-        return {__index, __index, &ADD};
+        return {__index, __index, &S_ADD};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]++;
     }, [](STR_DATA *str) -> std::string{
-        return "{&ADD}";
+        return "{&S_ADD}";
     });
 
-Structure SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == '-'){
-        return {__index, __index, &SUB};
+        return {__index, __index, &S_SUB};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]]--;
     }, [](STR_DATA *str) -> std::string{
-        return "{&SUB}";
+        return "{&S_SUB}";
     });
 
-Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == '<'){
-        return {__index, __index, &LFT};
+        return {__index, __index, &S_LFT};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
@@ -325,13 +325,13 @@ Structure LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
         }
         env->pointers[env->selected_pointer]--;
     }, [](STR_DATA *str) -> std::string{
-        return "{&LFT}";
+        return "{&S_LFT}";
     });
 
-Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == '>'){
-        return {__index, __index, &RGT};
+        return {__index, __index, &S_RGT};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
@@ -340,37 +340,37 @@ Structure RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
             env->memory.push_back(0);
         }
     }, [](STR_DATA *str) -> std::string{
-        return "{&RGT}";
+        return "{&S_RGT}";
     });
 
-Structure INP("INP", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_INP("INP", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == ','){
-        return {__index, __index, &INP};
+        return {__index, __index, &S_INP};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->memory[env->pointers[env->selected_pointer]] = readKey();
     }, [](STR_DATA *str) -> std::string{
-        return "{&INP}";
+        return "{&S_INP}";
     });
 
-Structure OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
               {
     if(__src[__index] == '.'){
-        return {__index, __index, &OUT};
+        return {__index, __index, &S_OUT};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
         std::cout << env->memory[env->pointers[env->selected_pointer]];
     }, [](STR_DATA *str) -> std::string{
-        return "{&OUT}";
+        return "{&S_OUT}";
     });
 
-Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DATA
                     {
     if(__src[__index] == '/'){
-        return {__index, __index, &N_POINTER};
+        return {__index, __index, &S_N_POINTER};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
@@ -379,13 +379,13 @@ Structure N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_DA
             env->pointers.push_back(env->pointers[env->selected_pointer-1]);
         }
     }, [](STR_DATA *str) -> std::string{
-        return "{&N_POINTER}";
+        return "{&S_N_POINTER}";
     });
 
-Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DATA
                     {
     if(__src[__index] == '\\'){
-        return {__index, __index, &P_POINTER};
+        return {__index, __index, &S_P_POINTER};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
@@ -396,7 +396,7 @@ Structure P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_DA
         }
         env->selected_pointer--;
     }, [](STR_DATA *str) -> std::string{
-        return "{&P_POINTER}";
+        return "{&S_P_POINTER}";
     });
 
 Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
@@ -423,7 +423,7 @@ Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, NULL, NULL);
 
-Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
     if(__src[__index] == '['){
         size_t _start = __index, _end;
@@ -431,7 +431,7 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
         line_addr adder;
 
         STR_DATA res = {_start};
-        res.type = &LOOP;
+        res.type = &S_LOOP;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
             if(__str->type == &END_POINTER_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
@@ -465,7 +465,7 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
             }
         }
     }, [](STR_DATA *str) -> std::string{
-        std::string res = "{&LOOP,{";
+        std::string res = "{&S_LOOP,{";
         for(size_t i = 0; i < str->inner.size(); i++){
             res += str->inner[i].type->build(&str->inner[i]) + ",";
         }
@@ -473,7 +473,7 @@ Structure LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
         return res;
     });
 
-Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                        {
     if(__src[__index] == '{'){
         size_t _start = __index, _end;
@@ -481,7 +481,7 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
         line_addr adder;
 
         STR_DATA res = {_start};
-        res.type = &POINTER_LOOP;
+        res.type = &S_POINTER_LOOP;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
             if(__str->type == &END_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
@@ -514,7 +514,7 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
             }
         }
     }, [](STR_DATA *str) -> std::string{
-        std::string res = "{&POINTER_LOOP,{";
+        std::string res = "{&S_POINTER_LOOP,{";
         for(size_t i = 0; i < str->inner.size(); i++){
             res += str->inner[i].type->build(&str->inner[i]) + ",";
         }
@@ -522,19 +522,19 @@ Structure POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> 
         return res;
     });
 
-Structure RET("RET", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_RET("RET", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '&'){
-        return {__index, __index, &RET};
+        return {__index, __index, &S_RET};
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
         env->signal(0);
     }, [](STR_DATA *str) -> std::string{
-        return "{&RET}";
+        return "{&S_RET}";
     });
 
-Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '('){
         size_t _start = __index, _end;
@@ -542,7 +542,7 @@ Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         line_addr adder;
 
         STR_DATA res = {_start};
-        res.type = &PART;
+        res.type = &S_PART;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
             if(__str->type == &END_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
@@ -579,7 +579,7 @@ Structure PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         });
         venv.run();
     }, [](STR_DATA *str) -> std::string{
-        std::string res = "{&PART,{";
+        std::string res = "{&S_PART,{";
         for(size_t i = 0; i < str->inner.size(); i++){
             res += str->inner[i].type->build(&str->inner[i]) + ",";
         }
@@ -592,7 +592,7 @@ Structure END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DATA
     return {};
     }, NULL, NULL);
 
-Structure FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '%'){
         if(reg.nreg.at(0))
@@ -605,7 +605,7 @@ Structure FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         line_addr adder;
 
         STR_DATA res = {_start};
-        res.type = &FUNC;
+        res.type = &S_FUNC;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
             if(__str->type == &END_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
@@ -639,7 +639,7 @@ Structure FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         env->functions.push_back(func);
         env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
     }, [](STR_DATA *str) -> std::string{
-        std::string res = "{&FUNC,{";
+        std::string res = "{&S_FUNC,{";
         for(size_t i = 0; i < str->inner.size(); i++){
             res += str->inner[i].type->build(&str->inner[i]) + ",";
         }
@@ -652,7 +652,7 @@ Structure END_CALL_FUNC("END_CALL_FUNC", [](size_t __index, const char *__src) -
     return {};
     }, NULL, NULL);
 
-Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '$'){
         if(reg.nreg.at(1))
@@ -665,7 +665,7 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
         line_addr adder;
 
         STR_DATA res = {_start};
-        res.type = &CALL_FUNC;
+        res.type = &S_CALL_FUNC;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
             if(__str->type == &END_LOOP){
                 adder = __line_adder->get_line(__str->start+1);
@@ -676,7 +676,7 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
             }else if(__str->type == &END_PART){
                 adder = __line_adder->get_line(__str->start+1);
                 __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &FUNC){
+            }else if(__str->type == &S_FUNC){
                 adder = __line_adder->get_line(__str->start+1);
                 __tb.raise(SyntaxError, string_format("illegal function definition at %i:%i", adder.line, adder.offset));
             }else if(__str->type == &END_CALL_FUNC){
@@ -726,7 +726,7 @@ Structure CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DA
         env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.clear();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
     }, [](STR_DATA *str) -> std::string{
-        std::string res = "{&CALL_FUNC,{";
+        std::string res = "{&S_CALL_FUNC,{";
         for(size_t i = 0; i < str->inner.size(); i++){
             res += str->inner[i].type->build(&str->inner[i]) + ",";
         }
