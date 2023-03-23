@@ -10,6 +10,7 @@
 #define INITIAL_REGISTRY_ARGS 2
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include <filesystem>
 #include <conio.h>
 char readKey()
 {
@@ -926,13 +927,26 @@ int main(int argc, char const *argv[])
     else
     {
         std::string __bsrc = program.build();
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        std::string bfile_addr = std::filesystem::temp_directory_path().string() + "bf-temp.cpp";
+        std::ofstream bfile(bfile_addr.c_str());
+        bool is_bfile_writable = (bool)bfile;
+        bfile.write(__bsrc.c_str(), __bsrc.length());
+        bfile.close();
+        if (!is_bfile_writable)
+        {
+            __tb.raise(IOError, string_format("can't wtite build file in %s", bfile_addr));
+            return IOError;
+        }
+        std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + options + ' ' + bfile_addr;
+#else
         std::string cmd = compiler + " -Wall -I" + path::getExecutableDir() + "include -o " + output + options + " -xc++ - << EOF\n" + __bsrc + "\nEOF";
+#endif
         bool is_worked = !system(cmd.c_str());
-        std::ifstream file;
-        file.open(output);
-        bool is_file_exists = (bool)file;
-        file.close();
-        if (!is_file_exists || !is_worked)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        remove(bfile_addr.c_str());
+#endif
+        if (!is_worked)
         {
             __tb.raise(CompileError, "a compilation error occurred");
             return CompileError;
