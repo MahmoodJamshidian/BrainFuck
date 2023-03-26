@@ -7,6 +7,8 @@
 #include <fstream>
 #include "path.hpp"
 
+#ifndef BF
+#define BF
 #define INITIAL_REGISTRY_ARGS 2
 
 void g_writeKey(char _val)
@@ -288,20 +290,23 @@ class iostream
     }
     uint operator>>(char &_val)
     {
-        _val = *(char *)_out.erase(0, 1).c_str();
+        _val = *(char *)_out.substr(0, 1).c_str();
+        _out.erase(0, 1);
         return 1;
     }
     void read(char &_val)
     {
-        _val = *(char *)_out.erase(0, 1).c_str();
+        this->operator>>(_val);
     }
     void read(char *&_val, uint _size)
     {
-        _val = (char *)_out.erase(0, _size).c_str();
+        _val = (char *)_out.substr(0, _size).c_str();
+        _out.erase(0, _size);
     }
     void read(std::string &_val, uint _size)
     {
-        _val = _out.erase(0, _size);
+        _val = _out.substr(0, _size);
+        _out.erase(0, _size);
     }
     uint write(char _val)
     {
@@ -372,15 +377,17 @@ class Environment
     size_t selected_pointer = 0;
     std::function<char()> readKey = g_readKey;
     std::function<void(char)> writeKey = g_writeKey;
+    iostream *_stream = NULL;
     Environment(STR_DATA main_struct, iostream *_stream = NULL){
         this->main_struct = main_struct;
         if (_stream != NULL)
         {
+            this->_stream = _stream;
             readKey = [&]() -> char{
-                return *(char *)read_iostream(_stream, 1).c_str();
+                return *(char *)read_iostream(this->_stream, 1).c_str();
             };
             writeKey = [&](char _val) -> void{
-                write_iostream(_stream, _val);
+                write_iostream(this->_stream, _val);
             };
         }
     }
@@ -400,7 +407,7 @@ class Environment
     }
 };
 
-char *__src;
+char *__source;
 
 Structure S_ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
               {
@@ -817,7 +824,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
         return {};
     } }, [](Environment *env, STR_DATA *str){
         if(env->memory[env->pointers[env->selected_pointer]] >= env->functions.size()){
-            __line_adder = new LineAddr(__src);
+            __line_adder = new LineAddr(__source);
             line_addr adder = __line_adder->get_line(str->start);
             __tb.raise(Undefined, string_format("function Undefined at %i:%i", adder.line, adder.offset));
         }
@@ -857,6 +864,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
 
 Structure::Structure(const char *__src)
 {
+    __source = (char *)__src;
     __line_adder = new LineAddr((char *)__src);
     line_addr adder;
     this->tree = this->detector(0, strlen(__src), __src, [&](STR_DATA *__str) -> bool
@@ -888,3 +896,4 @@ Structure::Structure(const char *__src)
         }
     };
 }
+#endif

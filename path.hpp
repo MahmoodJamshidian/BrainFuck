@@ -1,3 +1,5 @@
+#ifndef BF_PATH
+#define BF_PATH
 #if defined(_WIN32)
     #include <windows.h>
     #include <Shlwapi.h>
@@ -58,3 +60,4 @@ std::string getExecutableDir() {
     return res.substr(0, res.find_last_of("/")+1);
 }
 }
+#endif
