@@ -266,6 +266,12 @@ public:
 class iostream
 {
     std::string _out, _inp;
+    bool check_is_allow_to_read()
+    {
+        if (_inp.length() > 0)
+            return true;
+        return false;
+    }
     public:
     uint operator<<(std::string _val)
     {
@@ -290,9 +296,12 @@ class iostream
     }
     uint operator>>(char &_val)
     {
-        _val = *(char *)_out.substr(0, 1).c_str();
-        _out.erase(0, 1);
-        return 1;
+        if (_out.length() > 0){
+            _val = *(char *)_out.substr(0, 1).c_str();
+            _out.erase(0, 1);
+            return 1;
+        }
+        return 0;
     }
     void read(char &_val)
     {
@@ -338,13 +347,17 @@ class iostream
 
 std::string read_iostream(iostream *_stream)
 {
+    while (_stream->check_is_allow_to_read()){}
     std::string res = _stream->_inp;
     _stream->_inp = "";
     return res;
 }
 std::string read_iostream(iostream *_stream, uint _size)
 {
-    return _stream->_inp.erase(0, _size);
+    while (!_stream->check_is_allow_to_read()){}
+    std::string res = _stream->_inp.substr(0, _size);
+    _stream->_inp.erase(0, _size);
+    return res;
 }
 uint write_iostream(iostream *_stream, char _val)
 {
@@ -378,15 +391,22 @@ class Environment
     std::function<char()> readKey = g_readKey;
     std::function<void(char)> writeKey = g_writeKey;
     iostream *_stream = NULL;
-    Environment(STR_DATA main_struct, iostream *_stream = NULL){
+    std::function<void()> _on_read, _on_write;
+    Environment(STR_DATA main_struct, iostream *_stream = NULL, std::function<void()> _on_read = [](){}, std::function<void()> _on_write = [](){}){
         this->main_struct = main_struct;
+        this->_on_read = _on_read;
+        this->_on_write = _on_write;
         if (_stream != NULL)
         {
             this->_stream = _stream;
             readKey = [&]() -> char{
+                if (this->_on_read != NULL)
+                    this->_on_read();
                 return *(char *)read_iostream(this->_stream, 1).c_str();
             };
             writeKey = [&](char _val) -> void{
+                if (_on_read != NULL)
+                    this->_on_write();
                 write_iostream(this->_stream, _val);
             };
         }

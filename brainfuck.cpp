@@ -150,9 +150,8 @@ int main(int argc, char const *argv[])
     file.close();
     for(int _ = 0; _ < INITIAL_REGISTRY_ARGS; _++)
         reg.nreg.push_back(0);
-    __src = code;
     Structure main_struct((const char *)code);
-    Environment program({0, strlen(__src), &main_struct, false, main_struct.tree});
+    Environment program({0, strlen(code), &main_struct, false, main_struct.tree});
     if (!is_build)
         program.run();
     else
