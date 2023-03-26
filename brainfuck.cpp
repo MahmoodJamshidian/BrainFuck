@@ -14,6 +14,7 @@ void show_help(char const *argv[])
 
 int main(int argc, char const *argv[])
 {
+    __tb.throw_exc = false;
     if (argc < 2)
     {
         show_help(argv);

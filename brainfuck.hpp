@@ -142,12 +142,15 @@ class Traceback
     FILE *__stderr;
 
 public:
+    bool throw_exc = true;
     Traceback(FILE *__stderr = stderr)
     {
         this->__stderr = __stderr;
     }
     void raise(Exceptions __exc = Exception, const char *__msg = "")
     {
+        if (this->throw_exc)
+            throw std::runtime_error(string_format("%s: %s", exception_to_string(__exc), __msg));
         if (strcmp(__msg, "") != 0)
         {
             std::cerr << "\033[1;31m" << exception_to_string(__exc) << ": " << __msg << "\033[0m\n";
@@ -163,6 +166,8 @@ public:
     {
         this->raise(__exc.exception, __exc.msg);
     }
+
+
 };
 
 Traceback __tb;
