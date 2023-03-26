@@ -9,10 +9,14 @@
 
 #define INITIAL_REGISTRY_ARGS 2
 
+void g_writeKey(char _val)
+{
+    std::cout << _val;
+}
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <filesystem>
 #include <conio.h>
-char readKey()
+char g_readKey()
 {
     return (char)_getch();
 }
@@ -21,7 +25,7 @@ void clear()
     system("cls");
 }
 #else
-char readKey()
+char g_readKey()
 {
     char c;
     system("stty raw");
@@ -267,8 +271,19 @@ class Environment
     std::vector<size_t> pointers = {0};
     std::vector<Environment> functions;
     size_t selected_pointer = 0;
-    Environment(STR_DATA main_struct){
+    std::function<char()> readKey = g_readKey;
+    std::function<void(char)> writeKey = g_writeKey;
+    Environment(STR_DATA main_struct, iostream *_stream = NULL){
         this->main_struct = main_struct;
+        if (_stream != NULL)
+        {
+            readKey = [&]() -> char{
+                return (char)read_iostream(_stream, 1).c_str();
+            };
+            writeKey = [&](char _val) -> void{
+                write_iostream(_stream, _val);
+            };
+        }
     }
     void add_signal(signal_func handler)
     {
@@ -285,6 +300,105 @@ class Environment
         return main_struct.type->build(&main_struct);
     }
 };
+
+class iostream
+{
+    std::string _out, _inp;
+    public:
+    uint operator<<(std::string _val)
+    {
+        _inp += _val;
+        return _val.length();
+    }
+    uint operator<<(char *_val)
+    {
+        _inp += _val;
+        return strlen(_val);
+    }
+    uint operator<<(char _val)
+    {
+        _inp += _val;
+        return 1;
+    }
+    uint operator>>(std::string &_val)
+    {
+        _val = _out;
+        _out = "";
+        return _val.length();
+    }
+    uint operator>>(char &_val)
+    {
+        _val = (char)_out.erase(0, 1).c_str();
+        return 1;
+    }
+    void read(char &_val)
+    {
+        _val = (char)_out.erase(0, 1).c_str();
+    }
+    void read(char *&_val, uint _size)
+    {
+        _val = (char *)_out.erase(0, _size).c_str();
+    }
+    void read(std::string &_val, uint _size)
+    {
+        _val = _out.erase(0, _size);
+    }
+    uint write(char _val)
+    {
+        _inp += _val;
+        return 1;
+    }
+    uint write(char *_val, uint _size)
+    {
+        for (size_t _ind = 0; _ind < _size; _ind++)
+        {
+            _inp += _val[_ind];
+        }
+        return _size;
+    }
+    uint write(std::string _val, uint _size)
+    {
+        for (size_t _ind = 0; _ind < _size; _ind++)
+        {
+            _inp += _val[_ind];
+        }
+        return _size;
+    }
+    friend std::string read_iostream(iostream *);
+    friend std::string read_iostream(iostream *, uint);
+    friend uint write_iostream(iostream *, char);
+    friend uint write_iostream(iostream *, char *, uint);
+    friend uint write_iostream(iostream *, std::string);
+};
+
+std::string read_iostream(iostream *_stream)
+{
+    std::string res = _stream->_inp;
+    _stream->_inp = "";
+    return res;
+}
+std::string read_iostream(iostream *_stream, uint _size)
+{
+    return _stream->_inp.erase(0, _size);
+}
+uint write_iostream(iostream *_stream, char _val)
+{
+    _stream->_out += _val;
+    return 1;
+}
+uint write_iostream(iostream *_stream, char *_val, uint _size)
+{
+    for (size_t _ind = 0; _ind < _size; _ind++)
+    {
+        _stream->_out += _val[_ind];
+    }
+    return _size;
+}
+uint write_iostream(iostream *_stream, std::string _val)
+{
+    _stream->_out += _val;
+    return _val.length();
+}
 
 char *__src;
 
@@ -351,7 +465,7 @@ Structure S_INP("INP", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        env->memory[env->pointers[env->selected_pointer]] = readKey();
+        env->memory[env->pointers[env->selected_pointer]] = env->readKey();
     }, [](STR_DATA *str) -> std::string{
         return "{&S_INP}";
     });
@@ -363,7 +477,7 @@ Structure S_OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        std::cout << env->memory[env->pointers[env->selected_pointer]];
+        env->writeKey(env->memory[env->pointers[env->selected_pointer]]);
     }, [](STR_DATA *str) -> std::string{
         return "{&S_OUT}";
     });
@@ -578,6 +692,8 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
                 env->memory.push_back(0);
             env->memory[venv.pointers[venv.selected_pointer]] = venv.memory[venv.pointers[venv.selected_pointer]];
         });
+        venv.readKey = env->readKey;
+        venv.writeKey = env->writeKey;
         venv.run();
     }, [](STR_DATA *str) -> std::string{
         std::string res = "{&S_PART,{";
@@ -636,6 +752,8 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         return {};
     } }, [](Environment *env, STR_DATA *str){
         Environment func(*str);
+        func.readKey = env->readKey;
+        func.writeKey = env->writeKey;
         func.functions = env->functions;
         env->functions.push_back(func);
         env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
@@ -712,6 +830,8 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
             env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.push_back(inner.memory[inner.pointers[inner.selected_pointer]]);
             cargs++;
         });
+        inner.readKey = env->readKey;
+        inner.writeKey = env->writeKey;
         inner.run();
         size_t creturn(0);
         env->functions[env->memory[env->pointers[env->selected_pointer]]].add_signal([&](){
