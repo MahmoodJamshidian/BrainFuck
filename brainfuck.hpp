@@ -381,7 +381,7 @@ uint write_iostream(iostream *_stream, std::string _val)
 class Environment
 {
     std::vector<signal_func> sig_handlers;
-    STR_DATA main_struct;
+    std::vector<STR_DATA> structs;
     public:
     registry reg;
     std::vector<uint8_t> memory = {0};
@@ -392,8 +392,8 @@ class Environment
     std::function<void(char)> writeKey = g_writeKey;
     iostream *_stream = NULL;
     std::function<void()> _on_read, _on_write;
-    Environment(STR_DATA main_struct, iostream *_stream = NULL, std::function<void()> _on_read = [](){}, std::function<void()> _on_write = [](){}){
-        this->main_struct = main_struct;
+    Environment(std::vector<STR_DATA> structs, iostream *_stream = NULL, std::function<void()> _on_read = [](){}, std::function<void()> _on_write = [](){}){
+        this->structs = structs;
         this->_on_read = _on_read;
         this->_on_write = _on_write;
         if (_stream != NULL)
@@ -420,10 +420,20 @@ class Environment
         if(sig_handlers.size() > sig) sig_handlers.at(sig)();
     }
     void run(){
-        main_struct.type->run(this, &main_struct);
+        for (size_t _ind = 0; _ind < this->structs.size(); _ind++)
+        {
+            structs[_ind].type->run(this, &structs[_ind]);
+        }
     }
     std::string build(){
-        return main_struct.type->build(&main_struct);
+        std::string res;
+        for (size_t _ind = 0; _ind < this->structs.size(); _ind++)
+        {
+            res += this->structs[_ind].type->build(&this->structs[_ind]);
+            res += ',';
+        }
+        res.pop_back();
+        return res;
     }
 };
 
@@ -709,7 +719,7 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        Environment venv(*str);
+        Environment venv(str->inner);
         venv.memory = env->memory;
         venv.pointers = env->pointers;
         venv.selected_pointer = env->selected_pointer;
@@ -741,7 +751,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
     if(__src[__index] == '%'){
         if(reg.nreg.at(0))
         {
-            return {__index, __index, &END_FUNC};
+            return {__index, __index, &END_FUNC, true};
         }
         reg.nreg.at(0) = 1;
         size_t _start = __index, _end;
@@ -778,7 +788,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
     }else{
         return {};
     } }, [](Environment *env, STR_DATA *str){
-        Environment func(*str);
+        Environment func(str->inner);
         func.readKey = env->readKey;
         func.writeKey = env->writeKey;
         func.functions = env->functions;
@@ -803,7 +813,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
     if(__src[__index] == '$'){
         if(reg.nreg.at(1))
         {
-            return {__index, __index, &END_CALL_FUNC};
+            return {__index, __index, &END_CALL_FUNC, true};
         }
         reg.nreg.at(1) = 1;
         size_t _start = __index, _end;
@@ -848,7 +858,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
             line_addr adder = __line_adder->get_line(str->start);
             __tb.raise(Undefined, string_format("function Undefined at %i:%i", adder.line, adder.offset));
         }
-        Environment inner(*str);
+        Environment inner(str->inner);
         inner.memory = env->memory;
         inner.pointers = env->pointers;
         inner.selected_pointer = env->selected_pointer;
@@ -858,7 +868,6 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
             cargs++;
         });
         inner.readKey = env->readKey;
-        inner.writeKey = env->writeKey;
         inner.run();
         size_t creturn(0);
         env->functions[env->memory[env->pointers[env->selected_pointer]]].add_signal([&](){
