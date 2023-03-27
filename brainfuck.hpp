@@ -17,6 +17,7 @@ void g_writeKey(char _val)
 }
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <filesystem>
+#include <windows.h>
 #include <conio.h>
 char g_readKey()
 {
@@ -26,6 +27,7 @@ void clear()
 {
     system("cls");
 }
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 #else
 char g_readKey()
 {
@@ -153,11 +155,25 @@ public:
             throw std::runtime_error(string_format("%s: %s", exception_to_string(__exc), __msg));
         if (strcmp(__msg, "") != 0)
         {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+            SetConsoleTextAttribute(hConsole, 4);
+            std::cerr << exception_to_string(__exc) << ": " << __msg;
+            SetConsoleTextAttribute(hConsole, 7);
+            std::cerr << std::endl;
+#else
             std::cerr << "\033[1;31m" << exception_to_string(__exc) << ": " << __msg << "\033[0m\n";
+#endif
         }
         else
         {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+            SetConsoleTextAttribute(hConsole, 4);
+            std::cerr << exception_to_string(__exc);
+            SetConsoleTextAttribute(hConsole, 7);
+            std::cerr << std::endl;
+#else
             std::cerr << "\033[1;31m" << exception_to_string(__exc) << "\033[0m\n";
+#endif
         }
         exit(__exc);
     }
