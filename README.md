@@ -290,9 +290,9 @@ Which of these goals have been completed?
   
   Sometimes we want to combine our program with other languages and we don't want to use the compiler to run the brainfuck source separately. If we wanted to do this, we needed to use the source and compiler or the compiled source. We used to execute it by the system, that is, as follows:
   ```cpp
-  system("brainfuck ./main.bf")
+  system("brainfuck ./main.bf");
   // or (after build main.bf)
-  system("./main")
+  system("./main");
   ```
 
   Maybe we wanted the output not to be printed on the screen and the output to be automatically dumped in the variable??
