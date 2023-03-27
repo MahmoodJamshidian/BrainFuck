@@ -20,6 +20,7 @@ What are the development goals?
 - Virtualization System
 - Functional System
 - Compiler System
+- Use Directly
 - Debug System
 
 Which of these goals have been completed?
@@ -284,6 +285,110 @@ Which of these goals have been completed?
   - `--option <option>` : Set c++ compiler options
   
   > **NOTE**: If you don't use the `-b` or `--build` switch, it will work as an interpreter. And if you have not used these switches and have used the rest of the switches related to the build, you will encounter an error.
+
+- ### Use Directly
+  
+  Sometimes we want to combine our program with other languages and we don't want to use the compiler to run the brainfuck source separately. If we wanted to do this, we needed to use the source and compiler or the compiled source. We used to execute it by the system, that is, as follows:
+  ```cpp
+  system("brainfuck ./main.bf")
+  // or (after build main.bf)
+  system("./main")
+  ```
+
+  Maybe we wanted the output not to be printed on the screen and the output to be automatically dumped in the variable??
+
+  With this mentioned method, the work becomes very difficult and it may not work as we want, so we use the [v0.4](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.4) version that we can include the source compiler into our project and do a lot of work with do it.
+
+  A small example is below:
+  ```cpp
+  #include "brainfuck.hpp"
+
+  const char *code = "+++++++++[>++++++++++<-]>++++.+.";
+
+  Structure main_struct(code);
+  Program program(&main_struct);
+
+  int main()
+  {
+      program.run();
+      return 0;
+  }
+  ```
+
+  The source of brainfuck is placed in the `code` variable, its structures are specified in the next line, and an instance of the `Program` class is created, and the structure is given to it and finally executed.
+
+  In the line where environment is defined, you may get a little confused, so I will give a brief explanation about this and continue with the content.
+  
+  The Program class takes other arguments (*which are optional*) that I will explain below.
+
+  The second argument is a pointer to an `iostream` instance. You can control the input and output of your brainfuck program by means of the `iostream` class.
+
+  > **NOTE**: If you don't use `iostream`, the input and output of your brainfuck program will be `STDIO`.
+
+  Consider the following example:
+  ```cpp
+  #include "brainfuck.hpp"
+  #include <iostream>
+
+  const char *code = "++[->(,>,[-<+>]<.)<]";
+
+  iostream stream;
+  Structure main_struct(code);
+  Program program(&main_struct, &stream);
+
+  int main()
+  {
+    stream << "\2\43\12\54";
+    program.run();
+    std::cout << "result is:";
+    char loc_c;
+    for (int i = 0; i < 2; i++)
+    {
+      stream >> loc_c;
+      std::cout << " " << (int)loc_c;
+    }
+    std::cout << std::endl;
+      
+    return 0;
+  }
+  ```
+
+  We may want to write a program when we output the program according to the input, so we must use signals:
+  ```cpp
+  #include "brainfuck.hpp"
+  #include <iostream>
+
+  const char *code = "++[->(,>,[-<+>]<.)<]";
+
+  char inp[] = "\32\54\12\3";
+  int ind = 0;
+
+  iostream stream;
+  Structure main_struct(code);
+  Program program(&main_struct, &stream,
+    [](){
+      // input signal handler
+      stream << inp[ind++];
+    },
+    [](){
+      // output signal handler
+      char loc_c;
+      stream >> loc_c;
+      std::cout << " " << (int)loc_c;
+    }
+  );
+
+  int main()
+  {
+    std::cout << "result is:";
+    program.run();
+    std::cout << std::endl;
+
+    return 0;
+  }
+  ```
+
+  The third and fourth arguments of the `Program` class both take a lambda, the third argument is related to the input signal and the fourth argument is related to the output signal.
 
 The End
 -------
