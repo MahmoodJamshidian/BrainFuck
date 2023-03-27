@@ -9,6 +9,7 @@
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <conio.h>
+#include <windows.h>
 char readKey()
 {
     return (char)_getch();
@@ -17,6 +18,7 @@ void clear()
 {
     system("cls");
 }
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 #else
 char readKey()
 {
@@ -83,11 +85,25 @@ public:
     {
         if (strcmp(__msg, "") != 0)
         {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+            SetConsoleTextAttribute(hConsole, 4);
+            std::cerr << exception_to_string(__exc) << ": " << __msg;
+            SetConsoleTextAttribute(hConsole, 7);
+            std::cerr << std::endl;
+#else
             std::cerr << "\033[1;31m" << exception_to_string(__exc) << ": " << __msg << "\033[0m\n";
+#endif
         }
         else
         {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+            SetConsoleTextAttribute(hConsole, 4);
+            std::cerr << exception_to_string(__exc);
+            SetConsoleTextAttribute(hConsole, 7);
+            std::cerr << std::endl;
+#else
             std::cerr << "\033[1;31m" << exception_to_string(__exc) << "\033[0m\n";
+#endif
         }
         exit(__exc);
     }
