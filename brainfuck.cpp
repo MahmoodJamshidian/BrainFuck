@@ -153,7 +153,7 @@ int main(int argc, char const *argv[])
     for(int _ = 0; _ < INITIAL_REGISTRY_ARGS; _++)
         reg.nreg.push_back(0);
     Structure main_struct((const char *)code);
-    Environment program({{0, strlen(code), &main_struct, false, main_struct.tree}});
+    Program program(&main_struct);
     if (!is_build)
         program.run();
     else

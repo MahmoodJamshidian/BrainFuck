@@ -946,4 +946,10 @@ Structure::Structure(const char *__src)
         }
     };
 }
+class Program : public Environment
+{
+    Structure *main_struct;
+    public:
+    Program(Structure *main_struct, iostream *_stream = NULL, std::function<void()> _on_read = [](){}, std::function<void()> _on_write = [](){}) : Environment({{0, 0, main_struct, false, main_struct->tree}}, _stream, _on_read, _on_write){}
+};
 #endif
