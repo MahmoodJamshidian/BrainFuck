@@ -426,9 +426,9 @@ class Environment
                 return *(char *)read_iostream(this->_stream, 1).c_str();
             };
             writeKey = [&](char _val) -> void{
+                write_iostream(this->_stream, _val);
                 if (_on_read != NULL)
                     this->_on_write();
-                write_iostream(this->_stream, _val);
             };
         }
     }
