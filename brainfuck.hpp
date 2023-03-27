@@ -278,28 +278,28 @@ class iostream
         return false;
     }
     public:
-    uint operator<<(std::string _val)
+    size_t operator<<(std::string _val)
     {
         _inp += _val;
         return _val.length();
     }
-    uint operator<<(char *_val)
+    size_t operator<<(char *_val)
     {
         _inp += _val;
         return strlen(_val);
     }
-    uint operator<<(char _val)
+    size_t operator<<(char _val)
     {
         _inp += _val;
         return 1;
     }
-    uint operator>>(std::string &_val)
+    size_t operator>>(std::string &_val)
     {
         _val = _out;
         _out = "";
         return _val.length();
     }
-    uint operator>>(char &_val)
+    size_t operator>>(char &_val)
     {
         if (_out.length() > 0){
             _val = *(char *)_out.substr(0, 1).c_str();
@@ -312,22 +312,22 @@ class iostream
     {
         this->operator>>(_val);
     }
-    void read(char *&_val, uint _size)
+    void read(char *&_val, size_t _size)
     {
         _val = (char *)_out.substr(0, _size).c_str();
         _out.erase(0, _size);
     }
-    void read(std::string &_val, uint _size)
+    void read(std::string &_val, size_t _size)
     {
         _val = _out.substr(0, _size);
         _out.erase(0, _size);
     }
-    uint write(char _val)
+    size_t write(char _val)
     {
         _inp += _val;
         return 1;
     }
-    uint write(char *_val, uint _size)
+    size_t write(char *_val, size_t _size)
     {
         for (size_t _ind = 0; _ind < _size; _ind++)
         {
@@ -335,7 +335,7 @@ class iostream
         }
         return _size;
     }
-    uint write(std::string _val, uint _size)
+    size_t write(std::string _val, size_t _size)
     {
         for (size_t _ind = 0; _ind < _size; _ind++)
         {
@@ -344,10 +344,10 @@ class iostream
         return _size;
     }
     friend std::string read_iostream(iostream *);
-    friend std::string read_iostream(iostream *, uint);
-    friend uint write_iostream(iostream *, char);
-    friend uint write_iostream(iostream *, char *, uint);
-    friend uint write_iostream(iostream *, std::string);
+    friend std::string read_iostream(iostream *, size_t);
+    friend size_t write_iostream(iostream *, char);
+    friend size_t write_iostream(iostream *, char *, size_t);
+    friend size_t write_iostream(iostream *, std::string);
 };
 
 std::string read_iostream(iostream *_stream)
@@ -357,19 +357,19 @@ std::string read_iostream(iostream *_stream)
     _stream->_inp = "";
     return res;
 }
-std::string read_iostream(iostream *_stream, uint _size)
+std::string read_iostream(iostream *_stream, size_t _size)
 {
     while (!_stream->check_is_allow_to_read()){}
     std::string res = _stream->_inp.substr(0, _size);
     _stream->_inp.erase(0, _size);
     return res;
 }
-uint write_iostream(iostream *_stream, char _val)
+size_t write_iostream(iostream *_stream, char _val)
 {
     _stream->_out += _val;
     return 1;
 }
-uint write_iostream(iostream *_stream, char *_val, uint _size)
+size_t write_iostream(iostream *_stream, char *_val, size_t _size)
 {
     for (size_t _ind = 0; _ind < _size; _ind++)
     {
@@ -377,7 +377,7 @@ uint write_iostream(iostream *_stream, char *_val, uint _size)
     }
     return _size;
 }
-uint write_iostream(iostream *_stream, std::string _val)
+size_t write_iostream(iostream *_stream, std::string _val)
 {
     _stream->_out += _val;
     return _val.length();
