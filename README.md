@@ -21,7 +21,7 @@ What are the development goals?
 - Functional System
 - Compiler System
 - Use Directly
-- Debug System
+- Use Directly (For Python)
 
 Which of these goals have been completed?
 -----------------------------------------
@@ -301,6 +301,7 @@ Which of these goals have been completed?
 
   A small example is below:
   ```cpp
+  // Example 1
   #include "brainfuck.hpp"
 
   const char *code = "+++++++++[>++++++++++<-]>++++.+.";
@@ -327,6 +328,7 @@ Which of these goals have been completed?
 
   Consider the following example:
   ```cpp
+  // Example 2
   #include "brainfuck.hpp"
   #include <iostream>
 
@@ -355,6 +357,7 @@ Which of these goals have been completed?
 
   We may want to write a program when we output the program according to the input, so we must use signals:
   ```cpp
+  // Example 3
   #include "brainfuck.hpp"
   #include <iostream>
 
@@ -390,5 +393,73 @@ Which of these goals have been completed?
 
   The third and fourth arguments of the `Program` class both take a lambda, the third argument is related to the input signal and the fourth argument is related to the output signal.
 
+- ### Use Directly (For Python)
+  After the purpose of Use Directly was achieved, I got this idea why not combine it with other languages?? That's why I decided to add the possibility of using Python for the next step.
+
+  To be able to do this, I used the Cython language, which made my job very simple.
+
+  When I wanted to start this goal, I realized that if I wanted to compile the `brainfuck.pyx` file, I might encounter an error because I set the Cython translation language to C++, and the `brainfuck.cpp` file already exists. Therefore, I decided to name the Python library `libbfx`.
+
+  After the compilation process is finished, depending on your operating system, it produces either a libbfx.pyd or libbfx.so output, which you need to place alongside the libbfx.pyi file in your project and import it. Below are some examples written in the Python language, as mentioned above.
+
+  ```python
+  # Example 1
+  import libbfx
+
+  code = b"+++++++++[>++++++++++<-]>++++.+."
+
+  main_struct = libbfx.bf_Structure(code)
+  program = libbfx.bf_Program(main_struct)
+
+  program.run()
+  ```
+
+  ```python
+  # Example 2
+  import libbfx
+
+  code = b"++[->(,>,[-<+>]<.)<]"
+
+  main_struct = libbfx.bf_Structure(code)
+  stream = libbfx.bf_iostream()
+  program = libbfx.bf_Program(main_struct, stream)
+
+  stream.write(b"\2\43\12\54")
+
+  program.run()
+
+  print("result is:", end="")
+
+  for i in range(2):
+    print('', ord(stream.read(1)), end="")
+  print()
+  ```
+
+  ```python
+  # Example 3
+  import libbfx
+
+  code = b"++[->(,>,[-<+>]<.)<]"
+  inp = "\32\54\12\3"
+  ind = 0
+
+  main_struct = libbfx.bf_Structure(code)
+  stream = libbfx.bf_iostream()
+
+  def on_read():
+    global ind, stream
+    res = f"{inp[ind]}".encode()
+    ind += 1
+    stream.write(res)
+
+  program = libbfx.bf_Program(main_struct, stream, lambda: on_read(), lambda: print('', ord(stream.read(1)), end=""))
+
+  print("result is:", end="")
+
+  program.run()
+
+  print()
+  ```
+  
 The End
 -------
