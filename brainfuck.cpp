@@ -131,7 +131,7 @@ int main(int argc, char const *argv[])
         __tb.raise(IOError, string_format("can't open '%s': %s", filename, strerror(errno)));
         return IOError;
     }
-    char *code = (char *)malloc(file.tellg() * sizeof(char));
+    char *code = (char *)malloc(file.tellg() * sizeof(char) + 1);
     file.seekg(0);
     char c;
     size_t index = 0;
