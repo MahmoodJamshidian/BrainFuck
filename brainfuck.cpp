@@ -2,7 +2,7 @@
 
 void show_version()
 {
-    std::cout << "BrainFuck version 0.4\nCopyright (c) 2023 Mahmood Jamshidian (MJScript)\nMIT License\n\nWritten by Mahmood Jamshidian (MJScript)\n\nread more at https://github.com/MahmoodJamshidian/BrainFuck\n";
+    std::cout << "BrainFuck version 0.5\nCopyright (c) 2023 Mahmood Jamshidian (MJScript)\nMIT License\n\nWritten by Mahmood Jamshidian (MJScript)\n\nread more at https://github.com/MahmoodJamshidian/BrainFuck\n";
 }
 
 void show_help(char const *argv[])
