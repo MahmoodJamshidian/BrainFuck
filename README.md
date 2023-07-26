@@ -465,9 +465,9 @@ How To Build
 ------------
   - ### Prerequisites
     
-    To build this project, it is necessary to install g++ and make on your system. If your operating system is Windows, you can install these two tools by installing MinGW, and for Linux operating system, you need to install make and build-essential packages.
+    To build this project, it is necessary to install `g++` and make on your system. If your operating system is Windows, you can install these two tools by installing `MinGW`, and for Linux operating system, you need to install `make` and `build-essential` packages.
 
-    If you want to build libbfx, you need python (the version in which you want to use this library) and cython and python-development (the necessary headers for the build, if you use Linux, it needs to be installed separately and If you are using Windows, it does not need to be installed separately and it will be installed along with the cython installation) and it is also necessary to make changes in the Makefile file, which will be mentioned in the libbfx build section, not how to make the changes.
+    If you want to build `libbfx`, you need `python` (the version in which you want to use this library) and `cython` and `python-development` (the necessary headers for the build, if you use Linux, it needs to be installed separately and If you are using Windows, it does not need to be installed separately and it will be installed along with the cython installation) and it is also necessary to make changes in the `Makefile` file, which will be mentioned in the `libbfx` build section, not how to make the changes.
 
   - ### Build Compiler
     To build the compiler, enter the following command in the terminal:
@@ -476,7 +476,7 @@ How To Build
     ```
 
   - ### Build Libbfx
-    To build libbfx, in addition to the prerequisites, you need to make changes to the Makefile. These changes are related to the build settings for Python:
+    To build `libbfx`, in addition to the prerequisites, you need to make changes to the `Makefile`. These changes are related to the build settings for Python:
     - `INCLUDE_PATH`: contains the include path of Python header files, which can be obtained if the operating system is Linux `/usr/include/python<version>` and if it is Windows, `<Python PATH>/include`
 
       for example:
@@ -496,7 +496,7 @@ How To Build
     make compile-pyx
     ```
 
-    > **NOTE**: If you find that this Makefile is not suitable for you, you can change it.
+    > **NOTE**: If you find that this `Makefile` is not suitable for you, you can change it.
 
 The End
 -------
