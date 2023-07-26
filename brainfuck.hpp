@@ -35,7 +35,10 @@ char g_readKey()
     system("stty raw");
     c = getchar();
     system("stty cooked");
-    std::cout << "\b \b";
+    if (c > 0 && c < 32)
+        std::cout << "\b\b  \b\b";
+    else
+        std::cout << "\b \b";
     return c;
 }
 void clear()
