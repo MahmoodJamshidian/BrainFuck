@@ -1,5 +1,5 @@
-#ifndef BF_PATH
-#define BF_PATH
+#ifndef BFX_PATH
+#define BFX_PATH
 #if defined(_WIN32)
     #include <windows.h>
     #include <Shlwapi.h>

@@ -1,8 +1,10 @@
 #include "brainfuck.hpp"
 
+#define VERSION "0.5"
+
 void show_version()
 {
-    std::cout << "BrainFuck version 0.5\nCopyright (c) 2023 Mahmood Jamshidian (MJScript)\nMIT License\n\nWritten by Mahmood Jamshidian (MJScript)\n\nread more at https://github.com/MahmoodJamshidian/BrainFuck\n";
+    std::cout << "BrainFuck version " << VERSION << " \nCopyright (c) 2023 Mahmood Jamshidian (MJScript)\nMIT License\n\nWritten by Mahmood Jamshidian (MJScript)\n\nread more at https://github.com/MahmoodJamshidian/BrainFuck\n";
 }
 
 void show_help(char const *argv[])
@@ -32,7 +34,7 @@ int main(int argc, char const *argv[])
     }
     char const *filename = argv[1];
     const char *ext = std::string(filename).substr(std::string(filename).find_last_of(".") + 1).c_str();
-    if (strcmp(ext, "bf") != 0 && strcmp(ext, "b") != 0)
+    if (strcmp(ext, "bf") != 0 && strcmp(ext, "bfx") != 0)
     {
         __tb.raise(Exception, "invalid file extension");
         return Exception;

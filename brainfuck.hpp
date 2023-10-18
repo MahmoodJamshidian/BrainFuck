@@ -7,9 +7,10 @@
 #include <fstream>
 #include "path.hpp"
 
-#ifndef BF
-#define BF
-#define INITIAL_REGISTRY_ARGS 2
+#ifndef BFX
+#define BFX
+
+uint64_t INITIAL_REGISTRY_ARGS = 5;
 
 void g_writeKey(char _val)
 {
@@ -575,26 +576,44 @@ Structure S_P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_
         return "{&S_P_POINTER}";
     });
 
-Structure END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == ']'){
-        return {__index, __index, &END_LOOP, true};
+        if(!reg.nreg.at(0)){
+            line_addr adder;
+            adder = __line_adder->get_line(__index);
+            __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
+        }
+        reg.nreg.at(0) -= 1;
+        return {__index, __index, &S_END_LOOP, true};
     }else{
         return {};
     } }, NULL, NULL);
 
-Structure END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                            {
     if(__src[__index] == '}'){
-        return {__index, __index, &END_POINTER_LOOP, true};
+        if(!reg.nreg.at(1)){
+            line_addr adder;
+            adder = __line_adder->get_line(__index);
+            __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
+        }
+        reg.nreg.at(1) -= 1;
+        return {__index, __index, &S_END_POINTER_LOOP, true};
     }else{
         return {};
     } }, NULL, NULL);
 
-Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == ')'){
-        return {__index, __index, &END_PART, true};
+        if(!reg.nreg.at(2)){
+            line_addr adder;
+            adder = __line_adder->get_line(__index);
+            __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
+        }
+        reg.nreg.at(2) -= 1;
+        return {__index, __index, &S_END_PART, true};
     }else{
         return {};
     } }, NULL, NULL);
@@ -602,6 +621,7 @@ Structure END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DATA
 Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                {
     if(__src[__index] == '['){
+        reg.nreg.at(0) += 1;
         size_t _start = __index, _end;
         bool is_ended = false;
         line_addr adder;
@@ -609,13 +629,7 @@ Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
         STR_DATA res = {_start};
         res.type = &S_LOOP;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_LOOP){
+            if(__str->type == &S_END_LOOP){
                 _end = __str->end;
                 is_ended = true;
                 return true;
@@ -652,6 +666,7 @@ Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
 Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -> STR_DATA
                        {
     if(__src[__index] == '{'){
+        reg.nreg.at(1) += 1;
         size_t _start = __index, _end;
         bool is_ended = false;
         line_addr adder;
@@ -659,13 +674,7 @@ Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -
         STR_DATA res = {_start};
         res.type = &S_POINTER_LOOP;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_POINTER_LOOP){
+            if(__str->type == &S_END_POINTER_LOOP){
                 _end = __str->end;
                 is_ended = true;
                 return true;
@@ -713,6 +722,7 @@ Structure S_RET("RET", [](size_t __index, const char *__src) -> STR_DATA
 Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '('){
+        reg.nreg.at(2) += 1;
         size_t _start = __index, _end;
         bool is_ended = false;
         line_addr adder;
@@ -720,13 +730,7 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         STR_DATA res = {_start};
         res.type = &S_PART;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
+            if(__str->type == &S_END_PART){
                 _end = __str->end;
                 is_ended = true;
                 return true;
@@ -765,19 +769,23 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         return res;
     });
 
-Structure END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
-    return {};
+    if(__src[__index] == '%'){
+        if(reg.nreg.at(3)){
+            return {__index, __index, &S_END_FUNC, true};
+        }else{
+            return {};
+        }
+    }else{
+        return {};
+    }
     }, NULL, NULL);
 
 Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '%'){
-        if(reg.nreg.at(0))
-        {
-            return {__index, __index, &END_FUNC, true};
-        }
-        reg.nreg.at(0) = 1;
+        reg.nreg.at(3) = 1;
         size_t _start = __index, _end;
         bool is_ended = false;
         line_addr adder;
@@ -785,16 +793,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         STR_DATA res = {_start};
         res.type = &S_FUNC;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_FUNC){
+            if(__str->type == &S_END_FUNC){
                 _end = __str->end;
                 is_ended = true;
                 return true;
@@ -807,7 +806,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
             return {};
         }
         res.end = _end;
-        reg.nreg.at(0) = 0;
+        reg.nreg.at(3) = 0;
         return res;
     }else{
         return {};
@@ -827,19 +826,24 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         return res;
     });
 
-Structure END_CALL_FUNC("END_CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
+Structure S_END_CALL_FUNC("END_CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
-    return {};
+    if(__src[__index] == '$'){
+        if(reg.nreg.at(4))
+        {
+            return {__index, __index, &S_END_CALL_FUNC, true};
+        }else{
+            return {};
+        }
+    }else{
+        return {};
+    }
     }, NULL, NULL);
 
 Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_DATA
                    {
     if(__src[__index] == '$'){
-        if(reg.nreg.at(1))
-        {
-            return {__index, __index, &END_CALL_FUNC, true};
-        }
-        reg.nreg.at(1) = 1;
+        reg.nreg.at(4) = 1;
         size_t _start = __index, _end;
         bool is_ended = false;
         line_addr adder;
@@ -847,19 +851,10 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
         STR_DATA res = {_start};
         res.type = &S_CALL_FUNC;
         res.inner = Structure::detector(__index+1, strlen(__src), __src, [&](STR_DATA *__str) -> bool{
-            if(__str->type == &END_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &S_FUNC){
+            if(__str->type == &S_FUNC){
                 adder = __line_adder->get_line(__str->start+1);
                 __tb.raise(SyntaxError, string_format("illegal function definition at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_CALL_FUNC){
+            }else if(__str->type == &S_END_CALL_FUNC){
                 _end = __str->end;
                 is_ended = true;
                 return true;
@@ -872,7 +867,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
             return {};
         }
         res.end = _end;
-        reg.nreg.at(1) = 0;
+        reg.nreg.at(4) = 0;
         return res;
     }else{
         return {};
@@ -920,19 +915,7 @@ Structure::Structure(const char *__src)
     __source = (char *)__src;
     __line_adder = new LineAddr((char *)__src);
     line_addr adder;
-    this->tree = this->detector(0, strlen(__src), __src, [&](STR_DATA *__str) -> bool
-                                {
-            if(__str->type == &END_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_POINTER_LOOP){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
-            }else if(__str->type == &END_PART){
-                adder = __line_adder->get_line(__str->start+1);
-                __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
-            }
-            return false; });
+    this->tree = this->detector(0, strlen(__src), __src);
     this->__builder = [&](STR_DATA *str) -> std::string{
         std::string src = "#include \"core.hpp\"\nstatic std::vector<STR_DATA> TREE = {";
         for(size_t _ind = 0; _ind < str->inner.size(); _ind++)
