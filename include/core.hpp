@@ -1,43 +1,30 @@
-#include <iostream>
-#include <string.h>
-#include <vector>
 #include <functional>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <iostream>
+#include <vector>
 
-#define CORE
+#ifndef BFX_CORE_HEADER
+#define BFX_CORE_HEADER
 
-#define INITIAL_REGISTRY_ARGS 2
+uint64_t INITIAL_REGISTRY_ARGS = 5;
+
+void g_writeKey(char);
+char g_readKey();
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#include <conio.h>
+#include <filesystem>
 #include <windows.h>
-char readKey()
-{
-    return (char)_getch();
-}
-void clear()
-{
-    system("cls");
-}
-HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-#else
-char readKey()
-{
-    char c;
-    system("stty raw");
-    c = getchar();
-    system("stty cooked");
-    std::cout << "\b \b";
-    return c;
-}
-void clear()
-{
-    system("clear");
-}
+#include <conio.h>
+
+HANDLE hConsole;
 #endif
 
 enum Exceptions
 {
     Exception = 1,
+    SyntaxError,
     MemoryOverflow,
     MemoryUnderflow,
     PointerOverflow,
@@ -45,10 +32,15 @@ enum Exceptions
     Undefined
 };
 
+template <typename... REST>
+char *string_format(const char *__msg, const REST &...args);
+
 constexpr const char *exception_to_string(Exceptions e) throw()
 {
     switch (e)
     {
+    case Exceptions::SyntaxError:
+        return "SyntaxError";
     case Exceptions::MemoryOverflow:
         return "MemoryOverflow";
     case Exceptions::MemoryUnderflow:
@@ -75,46 +67,12 @@ struct ExceptionStr
 class Traceback
 {
     FILE *__stderr;
-
 public:
-    Traceback(FILE *__stderr = stderr)
-    {
-        this->__stderr = __stderr;
-    }
-    void raise(Exceptions __exc = Exception, const char *__msg = "")
-    {
-        if (strcmp(__msg, "") != 0)
-        {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-            SetConsoleTextAttribute(hConsole, 4);
-            std::cerr << exception_to_string(__exc) << ": " << __msg;
-            SetConsoleTextAttribute(hConsole, 7);
-            std::cerr << std::endl;
-#else
-            std::cerr << "\033[1;31m" << exception_to_string(__exc) << ": " << __msg << "\033[0m\n";
-#endif
-        }
-        else
-        {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-            SetConsoleTextAttribute(hConsole, 4);
-            std::cerr << exception_to_string(__exc);
-            SetConsoleTextAttribute(hConsole, 7);
-            std::cerr << std::endl;
-#else
-            std::cerr << "\033[1;31m" << exception_to_string(__exc) << "\033[0m\n";
-#endif
-        }
-        exit(__exc);
-    }
-
-    void raise(ExceptionStr __exc)
-    {
-        this->raise(__exc.exception, __exc.msg);
-    }
-};
-
-Traceback __tb;
+    bool throw_exc = true;
+    Traceback(FILE *);
+    void raise(Exceptions, const char *);
+    void raise(ExceptionStr);
+} __tb(stderr);
 
 class Structure;
 class Environment;
@@ -132,173 +90,36 @@ struct registry
     std::vector<uint8_t> nreg;
 } reg;
 
-using check_func = STR_DATA(size_t, const char *);
+using check_func = std::function<STR_DATA(size_t, const char *)>;
 using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
 using signal_func = std::function<void()>;
 
 std::vector<STR_DATA> src;
 
-class Structure
-{
-    react_func __reacter;
-
-public:
-    Structure(const char *__name, react_func __reacter)
-    {
-        this->__reacter = __reacter;
-        structers.push_back(this);
-    }
-
-    void run(Environment *env, STR_DATA *str){
-        this->__reacter(env, str);
-    }
-};
-
 class Environment
 {
     std::vector<signal_func> sig_handlers;
-    std::vector<STR_DATA> main_struct;
-    public:
+    std::vector<STR_DATA> structs;
+public:
     registry reg;
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
     std::vector<Environment> functions;
     size_t selected_pointer = 0;
-    Environment(std::vector<STR_DATA> main_struct){
-        this->main_struct = main_struct;
-    }
-    void add_signal(signal_func handler)
-    {
-        sig_handlers.push_back(handler);
-    }
-    void signal(uint8_t sig)
-    {
-        if(sig_handlers.size() > sig) sig_handlers.at(sig)();
-    }
-    void run(){
-        for(size_t i = 0; i < main_struct.size(); i++){
-            main_struct[i].type->run(this, &main_struct[i]);
-        }
-    }
+    Environment(std::vector<STR_DATA>);
+    void add_signal(signal_func);
+    void signal(uint8_t);
+    void run();
 };
 
-Structure S_ADD("ADD", [](Environment *env, STR_DATA *str){
-        env->memory[env->pointers[env->selected_pointer]]++;
-    });
+class Structure
+{
+    react_func __reacter;
 
-Structure S_SUB("SUB", [](Environment *env, STR_DATA *str){
-        env->memory[env->pointers[env->selected_pointer]]--;
-    });
-
-Structure S_LFT("LFT", [](Environment *env, STR_DATA *str){
-        if(env->pointers[env->selected_pointer] <= 0){
-            __tb.raise(MemoryUnderflow, "out of range");
-            return;
-        }
-        env->pointers[env->selected_pointer]--;
-    });
-
-Structure S_RGT("RGT", [](Environment *env, STR_DATA *str){
-        env->pointers[env->selected_pointer]++;
-        while(env->pointers[env->selected_pointer] >= env->memory.size()){
-            env->memory.push_back(0);
-        }
-    });
-
-Structure S_INP("INP", [](Environment *env, STR_DATA *str){
-        env->memory[env->pointers[env->selected_pointer]] = readKey();
-    });
-
-Structure S_OUT("OUT", [](Environment *env, STR_DATA *str){
-        std::cout << env->memory[env->pointers[env->selected_pointer]];
-    });
-
-Structure S_N_POINTER("N_POINTER", [](Environment *env, STR_DATA *str){
-        env->selected_pointer++;
-        while(env->selected_pointer >= env->pointers.size()){
-            env->pointers.push_back(env->pointers[env->selected_pointer-1]);
-        }
-    });
-
-Structure S_P_POINTER("P_POINTER", [](Environment *env, STR_DATA *str){
-        if(env->selected_pointer <= 0){
-            __tb.raise(PointerUnderflow, "out of range");
-            return;
-        }
-        env->selected_pointer--;
-    });
-
-Structure S_LOOP("LOOP", [](Environment *env, STR_DATA *str){
-        STR_DATA aloc;
-        while(env->memory[env->pointers[env->selected_pointer]]){
-            for(size_t i = 0; i < str->inner.size(); i++){
-                aloc = str->inner[i];
-                str->inner[i].type->run(env, &aloc);
-            }
-        }
-    });
-
-Structure S_POINTER_LOOP("POINTER_LOOP", [](Environment *env, STR_DATA *str){
-        STR_DATA aloc;
-        while(env->pointers[env->selected_pointer]){
-            for(size_t i = 0; i < str->inner.size(); i++){
-                aloc = str->inner[i];
-                str->inner[i].type->run(env, &aloc);
-            }
-        }
-    });
-
-Structure S_RET("RET", [](Environment *env, STR_DATA *str){
-        env->signal(0);
-    });
-
-Structure S_PART("PART", [](Environment *env, STR_DATA *str){
-        Environment venv(str->inner);
-        venv.memory = env->memory;
-        venv.pointers = env->pointers;
-        venv.selected_pointer = env->selected_pointer;
-        venv.functions = env->functions;
-        venv.add_signal([&](){
-            while(venv.pointers[venv.selected_pointer] >= env->memory.size())
-                env->memory.push_back(0);
-            env->memory[venv.pointers[venv.selected_pointer]] = venv.memory[venv.pointers[venv.selected_pointer]];
-        });
-        venv.run();
-    });
-
-Structure S_FUNC("FUNC", [](Environment *env, STR_DATA *str){
-        Environment func(str->inner);
-        func.functions = env->functions;
-        env->functions.push_back(func);
-        env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
-    });
-
-Structure S_CALL_FUNC("CALL_FUNC", [](Environment *env, STR_DATA *str){
-        if(env->memory[env->pointers[env->selected_pointer]] >= env->functions.size()){
-            __tb.raise(Undefined, "function Undefined");
-        }
-        Environment inner(str->inner);
-        inner.memory = env->memory;
-        inner.pointers = env->pointers;
-        inner.selected_pointer = env->selected_pointer;
-        uint8_t cargs(0);
-        inner.add_signal([&](){
-            env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.push_back(inner.memory[inner.pointers[inner.selected_pointer]]);
-            cargs++;
-        });
-        inner.run();
-        size_t creturn(0);
-        env->functions[env->memory[env->pointers[env->selected_pointer]]].add_signal([&](){
-            ++creturn;
-            while(env->pointers[env->selected_pointer]+creturn >= env->memory.size())
-            {
-                env->memory.push_back(0);
-            }
-            env->memory.at(env->pointers[env->selected_pointer]+creturn) = env->functions[env->memory[env->pointers[env->selected_pointer]]].memory[env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers[env->functions[env->memory[env->pointers[env->selected_pointer]]].selected_pointer]];
-        });
-        env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.at(0) = cargs;
-        env->functions[env->memory[env->pointers[env->selected_pointer]]].run();
-        env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.clear();
-        env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
-    });
+public:
+    std::vector<STR_DATA> tree;
+    Structure(react_func);
+    void run(Environment *, STR_DATA *);
+};
+#endif

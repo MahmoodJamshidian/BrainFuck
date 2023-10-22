@@ -4,6 +4,7 @@ CPYC=cython
 CPYC_ARGS=-3 --cplus
 MAIN_NAME=brainfuck
 DLL_NAME=libbfx
+BUILD_NAME_SUFIX=_build
 INCLUDE_PATH=/usr/include/python3.11
 LIB_PATH=/usr/lib/python3.11
 LIB_NAME=python3.11
@@ -16,9 +17,10 @@ DLL_FILE=$(DLL_NAME).so
 endif
 
 compile:
-	$(CPPC) $(MAIN_NAME).cpp -o $(EXE_FILE) $(CPPC_ARGS)
+	mkdir -p dist
+	$(CPPC) $(MAIN_NAME).cpp -I. -o dist/$(EXE_FILE) $(CPPC_ARGS)
 compile-pyx:
 	mkdir -p build
-	$(CPYC) $(CPYC_ARGS) -o build/$(DLL_NAME).cpp $(DLL_NAME).pyx
-	$(CPPC) -c -fPIC -I$(INCLUDE_PATH) -I. -o build/$(DLL_NAME).o build/$(DLL_NAME).cpp
-	$(CPPC) -shared -L$(LIB_PATH) -o libbfx.so build/$(DLL_NAME).o -l$(LIB_NAME)
+	$(CPYC) $(CPYC_ARGS) -o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).cpp $(DLL_NAME).pyx
+	$(CPPC) -c -fPIC -I$(INCLUDE_PATH) -I. -o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).cpp
+	$(CPPC) -shared -L$(LIB_PATH) -I. -o dist/$(DLL_FILE) build/$(DLL_NAME)$(BUILD_NAME_SUFIX).o -l$(LIB_NAME)

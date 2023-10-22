@@ -909,7 +909,7 @@ Structure::Structure(const char *__src)
     this->tree = this->detector(0, strlen(__src), __src);
     this->__builder = [&](STR_DATA *str) -> std::string
     {
-        std::string src = "#include \"core.hpp\"\nstatic std::vector<STR_DATA> TREE = {";
+        std::string src = "#include \"core.cpp\"\nstatic std::vector<STR_DATA> TREE = {";
         for(size_t _ind = 0; _ind < str->inner.size(); _ind++)
         {
             src += str->inner[_ind].type->build(&str->inner[_ind]) + ',';
