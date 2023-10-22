@@ -302,7 +302,7 @@ Which of these goals have been completed?
   A small example is below:
   ```cpp
   // Example 1
-  #include "brainfuck.hpp"
+  #include "libbfx.cpp"
 
   const char *code = "+++++++++[>++++++++++<-]>++++.+.";
 
@@ -329,7 +329,7 @@ Which of these goals have been completed?
   Consider the following example:
   ```cpp
   // Example 2
-  #include "brainfuck.hpp"
+  #include "libbfx.cpp"
   #include <iostream>
 
   const char *code = "++[->(,>,[-<+>]<.)<]";
@@ -358,7 +358,7 @@ Which of these goals have been completed?
   We may want to write a program when we output the program according to the input, so we must use signals:
   ```cpp
   // Example 3
-  #include "brainfuck.hpp"
+  #include "libbfx.cpp"
   #include <iostream>
 
   const char *code = "++[->(,>,[-<+>]<.)<]";
@@ -397,8 +397,6 @@ Which of these goals have been completed?
   After the purpose of Use Directly was achieved, I got this idea why not combine it with other languages?? That's why I decided to add the possibility of using Python for the next step.
 
   To be able to do this, I used the Cython language, which made my job very simple.
-
-  When I wanted to start this goal, I realized that if I wanted to compile the `brainfuck.pyx` file, I might encounter an error because I set the Cython translation language to C++, and the `brainfuck.cpp` file already exists. Therefore, I decided to name the Python library `libbfx`.
 
   After the compilation process is finished, depending on your operating system, it produces either a libbfx.pyd or libbfx.so output, which you need to place alongside the libbfx.pyi file in your project and import it. Below are some examples written in the Python language, as mentioned above.
 
@@ -469,14 +467,14 @@ How To Build
 
     If you want to build `libbfx`, you need `python` (the version in which you want to use this library) and `cython` and `python-development` (the necessary headers for the build, if you use Linux, it needs to be installed separately and If you are using Windows, it does not need to be installed separately and it will be installed along with the cython installation) and it is also necessary to make changes in the `Makefile` file, which will be mentioned in the `libbfx` build section, not how to make the changes.
 
-  - ### Build Compiler
+  - ### Build BFX Compiler
     To build the compiler, enter the following command in the terminal:
     ```shell
     make
     ```
 
-  - ### Build Libbfx
-    To build `libbfx`, in addition to the prerequisites, you need to make changes to the `Makefile`. These changes are related to the build settings for Python:
+  - ### Build Libbfx For Python
+    To build `libbfx` for Python, in addition to the prerequisites, you need to make changes to the `Makefile`. These changes are related to the build settings for Python:
     - `INCLUDE_PATH`: contains the include path of Python header files, which can be obtained if the operating system is Linux `/usr/include/python<version>` and if it is Windows, `<Python PATH>/include`
 
       for example:
