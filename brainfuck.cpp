@@ -1,4 +1,4 @@
-#include "brainfuck.hpp"
+#include "libbfx.cpp"
 
 #define VERSION "0.5"
 
@@ -129,7 +129,8 @@ int main(int argc, char const *argv[])
     std::ifstream file;
     file.open(filename, std::ifstream::in | std::ifstream::ate);
 
-    if(file.fail()){
+    if(file.fail())
+    {
         __tb.raise(IOError, string_format("can't open '%s': %s", filename, strerror(errno)));
         return IOError;
     }
@@ -140,7 +141,8 @@ int main(int argc, char const *argv[])
     while (true)
     {
         file.read(&c, 1);
-        if(!file.eof()){
+        if(!file.eof())
+        {
             if(c != '\r')
             {
                 code[index] = c;

@@ -6,10 +6,9 @@ from libc.stdint cimport *
 from libcpp cimport bool
 import traceback
 
-cdef extern from "brainfuck.hpp":
+cdef extern from "libbfx.cpp":
     cdef void g_writeKey(char _val)
     cdef char g_readKey()
-    cdef void clear()
     ctypedef struct registry:
         vector[uint8_t] nreg
     cdef struct STR_DATA:
