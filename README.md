@@ -406,8 +406,8 @@ Which of these goals have been completed?
 
   code = b"+++++++++[>++++++++++<-]>++++.+."
 
-  main_struct = libbfx.bf_Structure(code)
-  program = libbfx.bf_Program(main_struct)
+  main_struct = libbfx.bfx_Structure(code)
+  program = libbfx.bfx_Program(main_struct)
 
   program.run()
   ```
@@ -418,9 +418,9 @@ Which of these goals have been completed?
 
   code = b"++[->(,>,[-<+>]<.)<]"
 
-  main_struct = libbfx.bf_Structure(code)
-  stream = libbfx.bf_iostream()
-  program = libbfx.bf_Program(main_struct, stream)
+  main_struct = libbfx.bfx_Structure(code)
+  stream = libbfx.bfx_iostream()
+  program = libbfx.bfx_Program(main_struct, stream)
 
   stream.write(b"\2\43\12\54")
 
@@ -441,8 +441,8 @@ Which of these goals have been completed?
   inp = "\32\54\12\3"
   ind = 0
 
-  main_struct = libbfx.bf_Structure(code)
-  stream = libbfx.bf_iostream()
+  main_struct = libbfx.bfx_Structure(code)
+  stream = libbfx.bfx_iostream()
 
   def on_read():
     global ind, stream
@@ -450,7 +450,7 @@ Which of these goals have been completed?
     ind += 1
     stream.write(res)
 
-  program = libbfx.bf_Program(main_struct, stream, lambda: on_read(), lambda: print('', ord(stream.read(1)), end=""))
+  program = libbfx.bfx_Program(main_struct, stream, lambda: on_read(), lambda: print('', ord(stream.read(1)), end=""))
 
   print("result is:", end="")
 

@@ -51,34 +51,34 @@ cdef extern from "libbfx.cpp":
     cdef cppclass Program(Environment):
         Program(Structure *main_struct, iostream *_stream, signal_func _on_read, signal_func _on_write)
 
-cdef class bf_STR_DATA:
+cdef class bfx_STR_DATA:
     cdef STR_DATA *_str
     cdef void set(self, STR_DATA *_str):
         self._str = _str
     cdef STR_DATA* get(self):
         return self._str
 
-cdef class bf_Environment:
+cdef class bfx_Environment:
     cdef Environment *_env
     cdef void set(self, Environment *_env):
         self._env = _env
     cdef Environment *get(self):
         return self._env
 
-cdef class bf_Structure:
+cdef class bfx_Structure:
     cdef Structure *_structure
     cdef vector[STR_DATA] get_tree(self):
         return self._structure.tree
     def __init__(self, string __src):
         self._structure = new Structure(__src.c_str())
-    def build(self, bf_STR_DATA _str):
+    def build(self, bfx_STR_DATA _str):
         return self._structure.build(_str.get())
-    def run(self, bf_Environment _env, bf_STR_DATA _str):
+    def run(self, bfx_Environment _env, bfx_STR_DATA _str):
         cdef Environment *_cenv = _env.get()
         cdef STR_DATA *_cstr = _str.get()
         self._structure.run(_cenv, _cstr)
 
-cdef class bf_iostream:
+cdef class bfx_iostream:
     cdef iostream *_stream
     def __init__(self):
         self._stream = new iostream()
@@ -103,9 +103,9 @@ cdef void _c_on_write():
         traceback.print_exc()
         exit(1)
 
-cdef class bf_Program:
+cdef class bfx_Program:
     cdef Program *_program
-    def __init__(self, bf_Structure main_struct, bf_iostream _stream = None, _on_read = lambda: None, _on_write = lambda: None):
+    def __init__(self, bfx_Structure main_struct, bfx_iostream _stream = None, _on_read = lambda: None, _on_write = lambda: None):
         global _g_on_read, _g_on_write
         _g_on_read = _on_read
         _g_on_write = _on_write
