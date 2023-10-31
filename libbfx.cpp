@@ -112,7 +112,6 @@ std::vector<STR_DATA> Structure::detector(size_t __index, size_t __eof, const ch
     {
         for (uint8_t i = 0; i < structers.size(); i++)
         {
-            // res = structers[i]->__checker(__index, __src);
             res = structers.at(i)->__checker(__index, __src);
             if (res.type != NULL)
             {

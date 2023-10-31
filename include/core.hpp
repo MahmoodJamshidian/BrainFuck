@@ -85,11 +85,6 @@ struct STR_DATA
     std::vector<STR_DATA> inner;
 };
 
-struct registry
-{
-    std::vector<uint8_t> nreg;
-} reg;
-
 using check_func = std::function<STR_DATA(size_t, const char *)>;
 using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
@@ -102,7 +97,6 @@ class Environment
     std::vector<signal_func> sig_handlers;
     std::vector<STR_DATA> structs;
 public:
-    registry reg;
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
     std::vector<Environment> functions;

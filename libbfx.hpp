@@ -118,7 +118,12 @@ struct STR_DATA
 struct registry
 {
     std::vector<uint8_t> nreg;
-} reg;
+
+    registry(size_t _size)
+    {
+    	nreg.resize(_size);
+    }
+} reg(INITIAL_REGISTRY_ARGS);
 
 using check_func = std::function<STR_DATA(size_t, const char *)>;
 using detect_func = std::function<bool(STR_DATA *)>;
@@ -133,7 +138,6 @@ class Environment
     std::vector<signal_func> sig_handlers;
     std::vector<STR_DATA> structs;
 public:
-    registry reg;
     std::vector<uint8_t> memory = {0};
     std::vector<size_t> pointers = {0};
     std::vector<Environment> functions;

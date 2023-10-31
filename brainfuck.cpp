@@ -154,8 +154,7 @@ int main(int argc, char const *argv[])
         }
     }
     file.close();
-    for(int _ = 0; _ < INITIAL_REGISTRY_ARGS; _++)
-        reg.nreg.push_back(0);
+
     Structure main_struct((const char *)code);
     Program program(&main_struct);
     if (!is_build)
