@@ -1,26 +1,47 @@
 CPPC=g++
-CPPC_ARGS=
-CPYC=cython
-CPYC_ARGS=-3 --cplus
-MAIN_NAME=brainfuck
-DLL_NAME=libbfx
-BUILD_NAME_SUFIX=_build
-INCLUDE_PATH=/usr/include/python3.11
-LIB_PATH=/usr/lib/python3.11
-LIB_NAME=python3.11
+PYTHON=python3
+CPYC=$(PYTHON) -m cython
+
 ifeq ($(OS),Windows_NT)
-EXE_FILE=$(MAIN_NAME).exe
-DLL_FILE=$(DLL_NAME).pyd
+python_lib:=$(shell $(PYTHON) -c "import sysconfig; print((sysconfig.get_paths()['data']+'\\libs').replace(chr(0x5c), chr(0x5c)*2).replace(' ', '\\ '))")
+python_lib_name:=$(shell $(PYTHON) -c "import sysconfig; print('python'+sysconfig.get_config_var('py_version_nodot'))")
+exe_suffix=.exe
 else
-EXE_FILE=$(MAIN_NAME)
-DLL_FILE=$(DLL_NAME).so
+python_lib:=$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('BINLIBDEST'))")
+python_lib_name:=$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('BLDLIBRARY')[2:])")
+exe_suffix=
+endif
+python_include:=$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('INCLUDEPY').replace(chr(0x5c), chr(0x5c)*2).replace(' ', '\\ '))")
+
+compile: build/brainfuck.o dist_dir
+ifeq ($(OS),Windows_NT)
+	$(CPPC) build/brainfuck.o -o dist/brainfuck$(exe_suffix)
+else
+	$(CPPC) build/brainfuck.o -o dist/brainfuck$(exe_suffix)
 endif
 
-compile:
+compile-pyx: build/_libbfx.o dist_dir
+ifeq ($(OS),Windows_NT)
+	$(CPPC) -shared -L $(python_lib) -I . -o dist/libbfx.pyd build/_libbfx.o -l $(python_lib_name)
+else
+	$(CPPC) -shared -L $(python_lib) -I . -o dist/libbfx.so build/_libbfx.o -l $(python_lib_name)
+endif
+
+build/brainfuck.o: brainfuck.cpp libbfx.cpp libbfx.hpp build_dir
+	$(CPPC) -c -I. -o build/brainfuck.o brainfuck.cpp
+
+build/_libbfx.o: build/_libbfx.cpp libbfx.cpp libbfx.hpp build_dir
+ifeq ($(OS),Windows_NT)
+	$(CPPC) -c -fPIC -I $(python_include) -I . -DMS_WIN64 -o build/_libbfx.o build/_libbfx.cpp
+else
+	$(CPPC) -c -fPIC -I $(python_include) -I . -o build/_libbfx.o build/_libbfx.cpp
+endif
+
+build/_libbfx.cpp: libbfx.pyx build_dir
+	$(CPYC) -3 --cplus -o build/_libbfx.cpp libbfx.pyx
+
+dist_dir:
 	mkdir -p dist
-	$(CPPC) $(MAIN_NAME).cpp -I. -o dist/$(EXE_FILE) $(CPPC_ARGS)
-compile-pyx:
+
+build_dir:
 	mkdir -p build
-	$(CPYC) $(CPYC_ARGS) -o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).cpp $(DLL_NAME).pyx
-	$(CPPC) -c -fPIC -I$(INCLUDE_PATH) -I. -o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).o build/$(DLL_NAME)$(BUILD_NAME_SUFIX).cpp
-	$(CPPC) -shared -L$(LIB_PATH) -I. -o dist/$(DLL_FILE) build/$(DLL_NAME)$(BUILD_NAME_SUFIX).o -l$(LIB_NAME)
