@@ -465,7 +465,9 @@ How To Build
     
     To build this project, it is necessary to install `g++` and make on your system. If your operating system is Windows, you can install these two tools by installing `MinGW`, and for Linux operating system, you need to install `make` and `build-essential` packages.
 
-    If you want to build `libbfx`, you need `python` (the version in which you want to use this library) and `cython` and `python-development` (the necessary headers for the build, if you use Linux, it needs to be installed separately and If you are using Windows, it does not need to be installed separately and it will be installed along with the cython installation) and it is also necessary to make changes in the `Makefile` file, which will be mentioned in the `libbfx` build section, not how to make the changes.
+    If you want to build `libbfx`, you need `python` (the version in which you want to use this library) and `cython` and `python-development` (the necessary headers for the build, if you use Linux, it needs to be installed separately and If you are using Windows, it does not need to be installed separately and it will be installed along with the cython installation)
+
+    > **NOTE**: If you want to build the `bfx` compiler or `libbfx` for Windows use git bash as your terminal.
 
   - ### Build BFX Compiler
     To build the compiler, enter the following command in the terminal:
@@ -474,27 +476,12 @@ How To Build
     ```
 
   - ### Build Libbfx For Python
-    To build `libbfx` for Python, in addition to the prerequisites, you need to make changes to the `Makefile`. These changes are related to the build settings for Python:
-    - `INCLUDE_PATH`: contains the include path of Python header files, which can be obtained if the operating system is Linux `/usr/include/python<version>` and if it is Windows, `<Python PATH>/include`
-
-      for example:
-      - linux: `/usr/include/python3.10`
-      - windows: `C:\Users\user\AppData\Local\Programs\Python\Python310\include`
-
-    - `LIB_PATH`: The path where Python's static library files are located, which can be obtained if the operating system is Linux `/usr/lib/python<version>` and if it is Windows, `<Python PATH>/Libs`
-
-      for example:
-      - linux: `/usr/lib/python3.10`
-      - windows: `C:\Users\user\AppData\Local\Programs\Python\Python310\Libs`
-
-    - `LIB_NAME`: The name of the static library in the path specified in `LIB_PATH` for example: `python3.10`
-
-    after these changes, enter this command to build:
+    To build `libbfx` for `Python`, you need to use the following command:
     ```shell
     make compile-pyx
     ```
 
-    > **NOTE**: If you find that this `Makefile` is not suitable for you, you can change it.
+    > **NOTE**: The values of some variables in the `Makefile` file may not be the same as the information in your system. For example, `PYTHON` or `CPPC` variable. You can change those values based on your system information.
 
 The End
 -------
