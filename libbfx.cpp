@@ -15,7 +15,7 @@ char g_readKey()
     return (char)_getch();
 }
 
-hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 #else
 char g_readKey()
 {
