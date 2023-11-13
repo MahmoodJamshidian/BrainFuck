@@ -109,7 +109,11 @@ cdef class bfx_Program:
         global _g_on_read, _g_on_write
         _g_on_read = _on_read
         _g_on_write = _on_write
-        self._program = new Program(main_struct._structure, _stream=_stream._stream, _on_read=<signal_func>_c_on_read, _on_write=<signal_func>_c_on_write)
+        cdef iostream *_stream_obj = NULL
+        if _stream:
+            _stream_obj = _stream._stream
+            
+        self._program = new Program(main_struct._structure, _stream=_stream_obj, _on_read=<signal_func>_c_on_read, _on_write=<signal_func>_c_on_write)
     def run(self):
         self._program.run()
     def build(self):
