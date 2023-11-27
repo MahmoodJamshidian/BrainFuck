@@ -10,8 +10,6 @@
 #ifndef BFX_HEADER
 #define BFX_HEADER
 
-uint64_t INITIAL_REGISTRY_ARGS = 5;
-
 void g_writeKey(char);
 char g_readKey();
 
@@ -35,8 +33,6 @@ public:
     line_addr get_line(size_t);
 };
 
-LineAddr *__line_adder;
-
 template <typename... REST>
 char *string_format(const char *, const REST &...);
 
@@ -54,34 +50,7 @@ enum Exceptions
     InternalError
 };
 
-constexpr const char *exception_to_string(Exceptions e) throw()
-{
-    switch (e)
-    {
-    case Exceptions::SyntaxError:
-        return "SyntaxError";
-    case Exceptions::MemoryOverflow:
-        return "MemoryOverflow";
-    case Exceptions::MemoryUnderflow:
-        return "MemoryUnderflow";
-    case Exceptions::PointerOverflow:
-        return "PointerOverflow";
-    case Exceptions::PointerUnderflow:
-        return "PointerUnderflow";
-    case Exceptions::Undefined:
-        return "Undefined";
-    case Exceptions::CompileError:
-        return "CompileError";
-    case Exceptions::IOError:
-        return "IOError";
-    case Exceptions::InternalError:
-        return "InternalError";
-    case Exceptions::Exception:
-        return "Exception";
-    default:
-        throw std::invalid_argument("Unimplemented Exception");
-    }
-}
+constexpr const char *exception_to_string(Exceptions e) throw();
 
 struct ExceptionStr
 {
@@ -97,13 +66,11 @@ public:
     Traceback(FILE *);
     void raise(Exceptions, const char *);
     void raise(ExceptionStr);
-} __tb(stderr);
+};
 
 class Structure;
 class Environment;
 class iostream;
-
-std::vector<Structure *> structers;
 
 struct STR_DATA
 {
@@ -113,23 +80,47 @@ struct STR_DATA
     std::vector<STR_DATA> inner;
 };
 
-struct registry
+class registry_value
 {
-    std::vector<uint8_t> nreg;
+    private:
+    
+    uint64_t *reg_ptr;
 
-    registry(size_t _size)
-    {
-    	nreg.resize(_size);
-    }
-} reg(INITIAL_REGISTRY_ARGS);
+    public:
+
+    registry_value(uint64_t *);
+    uint64_t operator=(uint64_t);
+    uint64_t operator++();
+    uint64_t operator--();
+    uint64_t operator++(int);
+    uint64_t operator--(int);
+    uint64_t operator+=(uint64_t);
+    uint64_t operator-=(uint64_t);
+    operator bool();
+    bool operator!();
+};
+
+class registry
+{
+    protected:
+
+    uint64_t *mem, mem_size;
+    void resize(uint64_t);
+
+    public:
+
+    registry();
+    registry_value operator[](uint64_t);
+    uint64_t get(uint64_t);
+    void set(uint64_t, uint64_t);
+    ~registry();
+};
 
 using check_func = std::function<STR_DATA(size_t, const char *)>;
 using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
 using build_func = std::function<std::string(STR_DATA *)>;
 using signal_func = std::function<void()>;
-
-std::vector<STR_DATA> src;
 
 class Environment
 {
@@ -170,6 +161,8 @@ public:
     std::string build(STR_DATA *);
 };
 
+Structure *get_structure(const char *);
+
 class iostream
 {
     std::string _out, _inp;
@@ -192,8 +185,6 @@ public:
     friend size_t write_iostream(iostream *, char *, size_t);
     friend size_t write_iostream(iostream *, std::string);
 };
-
-char *__source;
 
 class Program : public Environment
 {

@@ -1,5 +1,6 @@
 #include "libbfx.hpp"
 #include <iostream>
+#include "path.cpp"
 
 #ifndef BFX
 #define BFX
@@ -30,6 +31,155 @@ char g_readKey()
     return c;
 }
 #endif
+
+constexpr const char *exception_to_string(Exceptions e) throw()
+{
+    switch (e)
+    {
+    case Exceptions::SyntaxError:
+        return "SyntaxError";
+    case Exceptions::MemoryOverflow:
+        return "MemoryOverflow";
+    case Exceptions::MemoryUnderflow:
+        return "MemoryUnderflow";
+    case Exceptions::PointerOverflow:
+        return "PointerOverflow";
+    case Exceptions::PointerUnderflow:
+        return "PointerUnderflow";
+    case Exceptions::Undefined:
+        return "Undefined";
+    case Exceptions::CompileError:
+        return "CompileError";
+    case Exceptions::IOError:
+        return "IOError";
+    case Exceptions::InternalError:
+        return "InternalError";
+    case Exceptions::Exception:
+        return "Exception";
+    default:
+        throw std::invalid_argument("Unimplemented Exception");
+    }
+}
+
+registry_value::registry_value(uint64_t *reg_ptr) : reg_ptr(reg_ptr) {}
+
+uint64_t registry_value::operator=(uint64_t val)
+{
+    return (*(this->reg_ptr) = val);
+}
+
+uint64_t registry_value::operator++()
+{
+    return (++ (*this->reg_ptr));
+}
+
+uint64_t registry_value::operator--()
+{
+    return (-- (*this->reg_ptr));
+}
+
+uint64_t registry_value::operator++(int)
+{
+    return (++ (*this->reg_ptr));
+}
+
+uint64_t registry_value::operator--(int)
+{
+    return (-- (*this->reg_ptr));
+}
+
+uint64_t registry_value::operator+=(uint64_t val)
+{
+    return (*(this->reg_ptr) += val);
+}
+
+uint64_t registry_value::operator-=(uint64_t val)
+{
+    return (*(this->reg_ptr) -= val);
+}
+
+registry_value::operator bool()
+{
+    return (bool)(*this->reg_ptr);
+}
+
+bool registry_value::operator!()
+{
+    return !(*(this->reg_ptr));
+}
+
+registry::registry()
+{
+    this->mem = (uint64_t *)malloc(sizeof(uint64_t));
+    this->mem_size = 1;
+}
+
+registry_value registry::operator[](uint64_t ind)
+{
+    if (ind >= this->mem_size)
+    {
+        this->resize(ind+1);
+    }
+
+    return registry_value(this->mem + ind);
+}
+
+uint64_t registry::get(uint64_t ind)
+{
+    if (ind < this->mem_size)
+    {
+        return *(this->mem + ind);
+    }
+    else
+    {
+        this->resize(ind+1);
+        return 0;
+    }
+}
+
+void registry::set(uint64_t ind, uint64_t val)
+{
+    if (ind >= this->mem_size)
+    {
+        this->resize(ind+1);
+    }
+
+    *(this->mem + ind) = val;
+}
+
+void registry::resize(uint64_t size)
+{
+    if (size < this->mem_size)
+    {
+        throw std::runtime_error("new size is invalid");
+    }
+    else
+    {
+        this->mem = (uint64_t *)realloc(this->mem, sizeof(uint64_t) * size);
+        this->mem_size = size;
+    }
+}
+
+registry::~registry()
+{
+    free(this->mem);
+}
+
+
+std::vector<Structure *> structers;
+
+Structure *get_structure(const char *name)
+{
+    for (uint64_t ind = 0; ind < structers.size(); ind++)
+    {
+        if (!strcmp(structers[ind]->name, name))
+        {
+            return structers[ind];
+        }
+    }
+
+    return NULL;
+}
 
 LineAddr::LineAddr(char *msg) : __msg(msg) {}
 
@@ -335,6 +485,16 @@ std::string Environment::build()
     return res;
 }
 
+Traceback __tb(stderr);
+
+registry reg;
+
+LineAddr *__line_adder;
+
+std::vector<STR_DATA> src;
+
+char *__source;
+
 Structure S_ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
     {
         if(__src[__index] == '+')
@@ -494,13 +654,13 @@ Structure S_END_LOOP("END_LOOP", [](size_t __index, const char *__src) -> STR_DA
     {
         if(__src[__index] == ']')
         {
-            if(!reg.nreg.at(0))
+            if(!reg[0])
             {
                 line_addr adder;
                 adder = __line_adder->get_line(__index);
                 __tb.raise(SyntaxError, string_format("']' without '[' at %i:%i", adder.line, adder.offset));
             }
-            reg.nreg.at(0) -= 1;
+            reg[0] --;
             return {__index, __index, &S_END_LOOP, true};
         }else{
             return {};
@@ -512,13 +672,13 @@ Structure S_END_POINTER_LOOP("END_POINTER_LOOP", [](size_t __index, const char *
     {
         if(__src[__index] == '}')
         {
-            if(!reg.nreg.at(1))
+            if(!reg[1])
             {
                 line_addr adder;
                 adder = __line_adder->get_line(__index);
                 __tb.raise(SyntaxError, string_format("'}' without '{' at %i:%i", adder.line, adder.offset));
             }
-            reg.nreg.at(1) -= 1;
+            reg[1] --;
             return {__index, __index, &S_END_POINTER_LOOP, true};
         }else{
             return {};
@@ -530,13 +690,13 @@ Structure S_END_PART("END_PART", [](size_t __index, const char *__src) -> STR_DA
     {
         if(__src[__index] == ')')
         {
-            if(!reg.nreg.at(2))
+            if(!reg[2])
             {
                 line_addr adder;
                 adder = __line_adder->get_line(__index);
                 __tb.raise(SyntaxError, string_format("')' without '(' at %i:%i", adder.line, adder.offset));
             }
-            reg.nreg.at(2) -= 1;
+            reg[2] --;
             return {__index, __index, &S_END_PART, true};
         }else{
             return {};
@@ -548,7 +708,7 @@ Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
     {
         if(__src[__index] == '[')
         {
-            reg.nreg.at(0) += 1;
+            reg[0] ++;
             size_t _start = __index, _end;
             bool is_ended = false;
             line_addr adder;
@@ -603,7 +763,7 @@ Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -
     {
         if(__src[__index] == '{')
         {
-            reg.nreg.at(1) += 1;
+            reg[1] ++;
             size_t _start = __index, _end;
             bool is_ended = false;
             line_addr adder;
@@ -676,7 +836,7 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
     {
         if(__src[__index] == '(')
         {
-            reg.nreg.at(2) += 1;
+            reg[2] ++;
             size_t _start = __index, _end;
             bool is_ended = false;
             line_addr adder;
@@ -735,7 +895,7 @@ Structure S_END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DA
     {
         if(__src[__index] == '%')
         {
-            if(reg.nreg.at(3))
+            if(reg[3])
             {
                 return {__index, __index, &S_END_FUNC, true};
             }else{
@@ -751,7 +911,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
     {
         if(__src[__index] == '%')
         {
-            reg.nreg.at(3) = 1;
+            reg[3] = 1;
             size_t _start = __index, _end;
             bool is_ended = false;
             line_addr adder;
@@ -774,7 +934,7 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
                 return {};
             }
             res.end = _end;
-            reg.nreg.at(3) = 0;
+            reg[3] = 0;
             return res;
         }else{
             return {};
@@ -803,7 +963,7 @@ Structure S_END_CALL_FUNC("END_CALL_FUNC", [](size_t __index, const char *__src)
     {
         if(__src[__index] == '$')
         {
-            if(reg.nreg.at(4))
+            if(reg[4])
             {
                 return {__index, __index, &S_END_CALL_FUNC, true};
             }else{
@@ -819,7 +979,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
     {
         if(__src[__index] == '$')
         {
-            reg.nreg.at(4) = 1;
+            reg[4] = 1;
             size_t _start = __index, _end;
             bool is_ended = false;
             line_addr adder;
@@ -847,7 +1007,7 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
                 return {};
             }
             res.end = _end;
-            reg.nreg.at(4) = 0;
+            reg[4] = 0;
             return res;
         }else{
             return {};

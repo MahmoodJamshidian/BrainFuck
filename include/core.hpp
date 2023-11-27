@@ -8,8 +8,6 @@
 #ifndef BFX_CORE_HEADER
 #define BFX_CORE_HEADER
 
-uint64_t INITIAL_REGISTRY_ARGS = 5;
-
 void g_writeKey(char);
 char g_readKey();
 
