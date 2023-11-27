@@ -294,7 +294,7 @@ std::vector<STR_DATA> Structure::detector(size_t __index, size_t __eof, const ch
     return tree;
 }
 
-Structure::Structure(const char *__name, check_func __checker, react_func __reacter, build_func __builder) : name(__name)
+Structure::Structure(const char *__name, check_func __checker, build_func __builder, react_func __reacter) : name(__name)
 {
     this->__checker = __checker;
     this->__reacter = __reacter;
@@ -503,12 +503,12 @@ Structure S_ADD("ADD", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        env->memory[env->pointers[env->selected_pointer]]++;
     }, [](STR_DATA *str) -> std::string
     {
         return "{&S_ADD}";
+    }, [](Environment *env, STR_DATA *str)
+    {
+        env->memory[env->pointers[env->selected_pointer]]++;
     }
 );
 
@@ -520,12 +520,12 @@ Structure S_SUB("SUB", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        env->memory[env->pointers[env->selected_pointer]]--;
     }, [](STR_DATA *str) -> std::string
     {
         return "{&S_SUB}";
+    }, [](Environment *env, STR_DATA *str)
+    {
+        env->memory[env->pointers[env->selected_pointer]]--;
     }
 );
 
@@ -537,6 +537,9 @@ Structure S_LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        return "{&S_LFT}";
     }, [](Environment *env, STR_DATA *str)
     {
         if(env->pointers[env->selected_pointer] <= 0)
@@ -546,9 +549,6 @@ Structure S_LFT("LFT", [](size_t __index, const char *__src) -> STR_DATA
             return;
         }
         env->pointers[env->selected_pointer]--;
-    }, [](STR_DATA *str) -> std::string
-    {
-        return "{&S_LFT}";
     }
 );
 
@@ -560,6 +560,9 @@ Structure S_RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        return "{&S_RGT}";
     }, [](Environment *env, STR_DATA *str)
     {
         env->pointers[env->selected_pointer]++;
@@ -567,9 +570,6 @@ Structure S_RGT("RGT", [](size_t __index, const char *__src) -> STR_DATA
         {
             env->memory.push_back(0);
         }
-    }, [](STR_DATA *str) -> std::string
-    {
-        return "{&S_RGT}";
     }
 );
 
@@ -581,12 +581,12 @@ Structure S_INP("INP", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        env->memory[env->pointers[env->selected_pointer]] = env->readKey();
     }, [](STR_DATA *str) -> std::string
     {
         return "{&S_INP}";
+    }, [](Environment *env, STR_DATA *str)
+    {
+        env->memory[env->pointers[env->selected_pointer]] = env->readKey();
     }
 );
 
@@ -598,12 +598,12 @@ Structure S_OUT("OUT", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        env->writeKey(env->memory[env->pointers[env->selected_pointer]]);
     }, [](STR_DATA *str) -> std::string
     {
         return "{&S_OUT}";
+    }, [](Environment *env, STR_DATA *str)
+    {
+        env->writeKey(env->memory[env->pointers[env->selected_pointer]]);
     }
 );
 
@@ -615,6 +615,9 @@ Structure S_N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        return "{&S_N_POINTER}";
     }, [](Environment *env, STR_DATA *str)
     {
         env->selected_pointer++;
@@ -622,8 +625,6 @@ Structure S_N_POINTER("N_POINTER", [](size_t __index, const char *__src) -> STR_
         {
             env->pointers.push_back(env->pointers[env->selected_pointer-1]);
         }
-    }, [](STR_DATA *str) -> std::string{
-        return "{&S_N_POINTER}";
     }
 );
 
@@ -635,6 +636,9 @@ Structure S_P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        return "{&S_P_POINTER}";
     }, [](Environment *env, STR_DATA *str)
     {
         if(env->selected_pointer <= 0)
@@ -644,9 +648,6 @@ Structure S_P_POINTER("P_POINTER", [](size_t __index, const char *__src) -> STR_
             return;
         }
         env->selected_pointer--;
-    }, [](STR_DATA *str) -> std::string
-    {
-        return "{&S_P_POINTER}";
     }
 );
 
@@ -736,6 +737,15 @@ Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        std::string res = "{&S_LOOP,{";
+        for(size_t i = 0; i < str->inner.size(); i++)
+        {
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     }, [](Environment *env, STR_DATA *str)
     {
         STR_DATA aloc;
@@ -747,15 +757,6 @@ Structure S_LOOP("LOOP", [](size_t __index, const char *__src) -> STR_DATA
                 str->inner[i].type->run(env, &aloc);
             }
         }
-    }, [](STR_DATA *str) -> std::string
-    {
-        std::string res = "{&S_LOOP,{";
-        for(size_t i = 0; i < str->inner.size(); i++)
-        {
-            res += str->inner[i].type->build(&str->inner[i]) + ",";
-        }
-        res += "}}";
-        return res;
     }
 );
 
@@ -792,6 +793,15 @@ Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        std::string res = "{&S_POINTER_LOOP,{";
+        for(size_t i = 0; i < str->inner.size(); i++)
+        {
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     }, [](Environment *env, STR_DATA *str)
     {
         STR_DATA aloc;
@@ -803,15 +813,6 @@ Structure S_POINTER_LOOP("POINTER_LOOP", [](size_t __index, const char *__src) -
                 str->inner[i].type->run(env, &aloc);
             }
         }
-    }, [](STR_DATA *str) -> std::string
-    {
-        std::string res = "{&S_POINTER_LOOP,{";
-        for(size_t i = 0; i < str->inner.size(); i++)
-        {
-            res += str->inner[i].type->build(&str->inner[i]) + ",";
-        }
-        res += "}}";
-        return res;
     }
 );
 
@@ -823,12 +824,12 @@ Structure S_RET("RET", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        env->signal(0);
     }, [](STR_DATA *str) -> std::string
     {
         return "{&S_RET}";
+    }, [](Environment *env, STR_DATA *str)
+    {
+        env->signal(0);
     }
 );
 
@@ -864,6 +865,15 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        std::string res = "{&S_PART,{";
+        for(size_t i = 0; i < str->inner.size(); i++)
+        {
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     }, [](Environment *env, STR_DATA *str)
     {
         Environment venv(str->inner);
@@ -880,15 +890,6 @@ Structure S_PART("PART", [](size_t __index, const char *__src) -> STR_DATA
         venv.readKey = env->readKey;
         venv.writeKey = env->writeKey;
         venv.run();
-    }, [](STR_DATA *str) -> std::string
-    {
-        std::string res = "{&S_PART,{";
-        for(size_t i = 0; i < str->inner.size(); i++)
-        {
-            res += str->inner[i].type->build(&str->inner[i]) + ",";
-        }
-        res += "}}";
-        return res;
     });
 
 Structure S_END_FUNC("END_FUNC", [](size_t __index, const char *__src) -> STR_DATA
@@ -939,14 +940,6 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         }else{
             return {};
         }
-    }, [](Environment *env, STR_DATA *str)
-    {
-        Environment func(str->inner);
-        func.readKey = env->readKey;
-        func.writeKey = env->writeKey;
-        func.functions = env->functions;
-        env->functions.push_back(func);
-        env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
     }, [](STR_DATA *str) -> std::string
     {
         std::string res = "{&S_FUNC,{";
@@ -956,6 +949,14 @@ Structure S_FUNC("FUNC", [](size_t __index, const char *__src) -> STR_DATA
         }
         res += "}}";
         return res;
+    }, [](Environment *env, STR_DATA *str)
+    {
+        Environment func(str->inner);
+        func.readKey = env->readKey;
+        func.writeKey = env->writeKey;
+        func.functions = env->functions;
+        env->functions.push_back(func);
+        env->memory[env->pointers[env->selected_pointer]] = env->functions.size() - 1;
     }
 );
 
@@ -1012,6 +1013,15 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
         }else{
             return {};
         }
+    }, [](STR_DATA *str) -> std::string
+    {
+        std::string res = "{&S_CALL_FUNC,{";
+        for(size_t i = 0; i < str->inner.size(); i++)
+        {
+            res += str->inner[i].type->build(&str->inner[i]) + ",";
+        }
+        res += "}}";
+        return res;
     }, [](Environment *env, STR_DATA *str)
     {
         if(env->memory[env->pointers[env->selected_pointer]] >= env->functions.size())
@@ -1048,15 +1058,6 @@ Structure S_CALL_FUNC("CALL_FUNC", [](size_t __index, const char *__src) -> STR_
         env->functions[env->memory[env->pointers[env->selected_pointer]]].run();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].memory.clear();
         env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
-    }, [](STR_DATA *str) -> std::string
-    {
-        std::string res = "{&S_CALL_FUNC,{";
-        for(size_t i = 0; i < str->inner.size(); i++)
-        {
-            res += str->inner[i].type->build(&str->inner[i]) + ",";
-        }
-        res += "}}";
-        return res;
     }
 );
 

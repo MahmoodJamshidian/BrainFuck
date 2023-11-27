@@ -154,7 +154,7 @@ public:
     static std::vector<STR_DATA> detector(size_t, size_t, const char *, detect_func);
 
     Structure(const char *);
-    Structure(const char *, check_func, react_func, build_func);
+    Structure(const char *, check_func, build_func, react_func);
 
     void run(Environment *, STR_DATA *);
 
