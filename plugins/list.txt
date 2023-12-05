@@ -1,0 +1,9 @@
+# use `#` in first of each line for write comment.
+# for using plugins, you must be wrote plugin name in each line in this file.
+# if a structure was rewritten in that plugin, in order to replace that structure during execution, you must put the `+` character at the end of the plugin name.
+# rewriting a structure can only be useful in interpretive mode, at compile time it is not considered which structure is rewritten.
+# for example, we have a plugin named `rev`, for which it is possible to rewrite the structure.
+
+rev+
+
+# In order to be able to compile your plugins, all your plugin files must be located in the `plugins/src` directory, then by entering `make build_plugins` command, all plugins will be built.
