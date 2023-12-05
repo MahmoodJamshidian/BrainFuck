@@ -401,7 +401,7 @@ Which of these goals have been completed?
 
   const char *code = "+++++++++[>++++++++++<-]>++++.+~.";
 
-  load_plugin("/home/mjscript/projects/BrainFuck/plugins/bin/rev.so", False);
+  load_plugin("/home/mjscript/projects/BrainFuck/plugins/bin/rev.so", false);
 
   Structure main_struct(code);
   Program program(&main_struct);
@@ -487,7 +487,7 @@ Which of these goals have been completed?
 
   code = b"+++++++++[>++++++++++<-]>++++.+~."
 
-  libbfx.bfx_load_plugin(b"/home/mjscript/BrainFuck/plugins/bin/rev.so")
+  libbfx.bfx_load_plugin(b"/home/mjscript/BrainFuck/plugins/bin/rev.so", False)
 
   main_struct = libbfx.bfx_Structure(code)
   program = libbfx.bfx_Program(main_struct)
