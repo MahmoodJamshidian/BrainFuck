@@ -12,6 +12,10 @@ python_lib_name:=$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_con
 exe_suffix=
 endif
 python_include:=$(shell $(PYTHON) -c "import sysconfig; print(sysconfig.get_config_var('INCLUDEPY').replace(chr(0x5c), chr(0x5c)*2).replace(' ', '\\ '))")
+dll_suffix:=so
+ifeq ($(OS),Windows_NT)
+dll_suffix:=dll
+endif
 
 compile: build/brainfuck.o dist_dir
 ifeq ($(OS),Windows_NT)
@@ -45,3 +49,10 @@ dist_dir:
 
 build_dir:
 	mkdir -p build
+
+build_plugins: plugins/src
+	@mkdir -p plugins/bin; \
+	cpp_files=`ls plugins/src/ | grep \.cpp$$`; \
+	for cpp_file in $$cpp_files; do \
+		g++ -I. -Iplugins/src -shared -fPIC "plugins/src/$${cpp_file}" -D BFX_PLUGIN_BUILD -o "plugins/bin/$${cpp_file%.cpp}.$(dll_suffix)"; \
+	done
