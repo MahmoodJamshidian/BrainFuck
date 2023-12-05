@@ -22,6 +22,7 @@ What are the development goals?
 - Compiler System
 - Use Directly
 - Use Directly (For Python)
+- Plugin Management System
 
 Which of these goals have been completed?
 -----------------------------------------
@@ -393,12 +394,33 @@ Which of these goals have been completed?
 
   The third and fourth arguments of the `Program` class both take a lambda, the third argument is related to the input signal and the fourth argument is related to the output signal.
 
+  To be able to load your desired plugin in this mode, you must use the `load_plugin` function. Pay attention to the following example:
+  ```cpp
+  // Example 4
+  #include "libbfx.cpp"
+
+  const char *code = "+++++++++[>++++++++++<-]>++++.+~.";
+
+  load_plugin("/home/mjscript/projects/BrainFuck/plugins/bin/rev.so", False);
+
+  Structure main_struct(code);
+  Program program(&main_struct);
+
+  int main()
+  {
+    program.run();
+    return 0;
+  }
+  ```
+
+  The first argument of the load_plugin function is the address of the built file of the plugin, and the second argument is a boolean that specifies whether the desired plugin has the access to rewrite the structures or not.
+
 - ### Use Directly (For Python)
   After the purpose of Use Directly was achieved, I got this idea why not combine it with other languages?? That's why I decided to add the possibility of using Python for the next step.
 
   To be able to do this, I used the Cython language, which made my job very simple.
 
-  After the compilation process is finished, depending on your operating system, it produces either a libbfx.pyd or libbfx.so output, which you need to place alongside the libbfx.pyi file in your project and import it. Below are some examples written in the Python language, as mentioned above.
+  After the compilation process is finished, depending on your operating system, it produces either a `libbfx.pyd` or `libbfx.so` output, which you need to place alongside the `libbfx.pyi` file in your project and import it. Below are some examples written in the Python language, as mentioned above.
 
   ```python
   # Example 1
@@ -459,6 +481,81 @@ Which of these goals have been completed?
   print()
   ```
 
+  ```python
+  # Example 4
+  import libbfx
+
+  code = b"+++++++++[>++++++++++<-]>++++.+~."
+
+  libbfx.bfx_load_plugin(b"/home/mjscript/BrainFuck/plugins/bin/rev.so")
+
+  main_struct = libbfx.bfx_Structure(code)
+  program = libbfx.bfx_Program(main_struct)
+
+  program.run()
+  ```
+
+- ### Plugin Management System
+  BrainFuck itself is a minimalistic language and it is very difficult to write a single line on the console with the available features. BFX is an enhanced version of BrainFuck but still has some shortcomings. Before [v0.6](https://github.com/MahmoodJamshidian/BrainFuck/releases/tag/v0.6), in order to add something new to this language, we had to make changes in the original source, but now we can implement many of these changes without changing the original source.
+
+  To create your own plugin, you need to use the [`rev`](plugins/src/rev.cpp) sample plugin structure as follows:
+
+  ```cpp
+  #ifdef BFX_BUILD
+  #ifndef BFX_CORE
+  #include "core.cpp"
+  #endif
+  #else
+  #include "libbfx.cpp"
+  #endif
+
+  Structure S_NAME(
+  #ifndef BFX_BUILD
+    "NAME", [](size_t __index, const char *__src) -> STR_DATA
+    {
+      // detector section
+      return {__index, __index, &S_NAME};
+    }, [](STR_DATA *str) -> std::string
+    {
+      // builder section
+      return "{&S_NAME}";
+    }, 
+  #endif
+    [](Environment *env, STR_DATA *str)
+    {
+      // reacter section
+    }
+  );
+  ```
+
+  In each plugin package, you can define unlimited structures and note that their names should not be repeated or their names should not be the same as the names of builtin structures (unless you want to rewrite them).
+
+  Another use of plugins is to overwrite builtin plugins, to do this you need to name the new structure the same as the predefined structure. But this possibility is only available in interpretive mode, and when you do the build, the new structure is added to the list of structures, but *it does not replace the previous structure*.
+
+  Next, you need to save it in this format: `plugins/src/PLUGIN_NAME.cpp`, like this: `plugins/src/rev.cpp`.
+
+  To build plugins, refer to the [Build Plugins](#build-plugins) section
+
+  > **Note**: If you have built your plugins arbitrarily, put their source in `plugins/src` and the output in `plugins/bin` to be accessible to the program.
+
+  Next, use the list.txt file to determine which plugins the program should use and which of the plugins can overwrite the predefined structures.
+
+  In each line, write the name of a plugin (name only) and put the + sign at the end so that the plugin can overwrite the previous structures. And to create a comment, put # at the beginning of that line and then your comment.
+  for example:
+
+  ```
+  # this is a comment
+  # The following line causes the rev plugin to be added along with rewriting access to structures.
+  
+  rev+
+  ```
+
+  If the plugin does not have structure rewriting access and a structure is overwritten in it, when the program is executed, you will encounter an error similar to the following:
+  ```
+  InternalError: error on loading '.../plugins/new_add.so': ADD structure has been rewritten (Permission Denied)
+  ```
+
+
 How To Build
 ------------
   - ### Prerequisites
@@ -482,6 +579,14 @@ How To Build
     ```
 
     > **NOTE**: The values of some variables in the `Makefile` file may not be the same as the information in your system. For example, `PYTHON` or `CPPC` variable. You can change those values based on your system information.
+  
+  - ### Build Plugins
+    Use the following command to build plugins:
+    ```shell
+    make build_plugins
+    ```
+
+    With this command, your plugins, which are located in `plugins/src`, will be built and placed in `plugins/bin`.
 
 The End
 -------
