@@ -26,9 +26,9 @@ endif
 
 compile-pyx: build/_libbfx.o dist_dir
 ifeq ($(OS),Windows_NT)
-	$(CPPC) -shared -L $(python_lib) -I . -o dist/libbfx.pyd build/_libbfx.o -l $(python_lib_name)
+	$(CPPC) -shared -L"$(python_lib)" -I. -o dist/libbfx.pyd build/_libbfx.o -l$(python_lib_name)
 else
-	$(CPPC) -shared -L $(python_lib) -I . -o dist/libbfx.so build/_libbfx.o -l $(python_lib_name)
+	$(CPPC) -shared -L"$(python_lib)" -I. -o dist/libbfx.so build/_libbfx.o -l$(python_lib_name)
 endif
 
 build/brainfuck.o: brainfuck.cpp libbfx.cpp libbfx.hpp build_dir

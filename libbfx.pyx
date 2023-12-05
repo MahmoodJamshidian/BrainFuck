@@ -25,7 +25,7 @@ cdef extern from "libbfx.cpp":
     cdef cppclass Structure:
         vector[STR_DATA] tree
         Structure(const char *__src)
-        Structure(const char *__name, check_func *__checker, react_func __reacter, build_func __builder)
+        Structure(const char *__name, check_func *__checker, build_func __builder, react_func __reacter)
         vector[STR_DATA] detector(size_t __index, size_t __eof, const char *__src, handler_t __handler)
         void run(Environment *env, STR_DATA *str)
         string build(STR_DATA *str)
@@ -50,6 +50,7 @@ cdef extern from "libbfx.cpp":
     cdef Structure S_ADD, S_SUB, S_LFT, S_RGT, S_INP, S_OUT, S_N_POINTER, S_P_POINTER, S_LOOP, S_POINTER_LOOP, S_RET, S_PART, S_FUNC, S_CALL_FUNC
     cdef cppclass Program(Environment):
         Program(Structure *main_struct, iostream *_stream, signal_func _on_read, signal_func _on_write)
+    cdef void load_plugin(const char *dir, bool overwrite)
 
 cdef class bfx_STR_DATA:
     cdef STR_DATA *_str
@@ -86,8 +87,8 @@ cdef class bfx_iostream:
         cdef char *res = <char *>malloc(buffer_size)
         self._stream.read(res, buffer_size)
         return res
-    def write(self, data):
-        return self._stream.write(<char*>data, len(data))
+    def write(self, string data):
+        return self._stream.write(data.c_str(), len(data))
     
 cdef object _g_on_read, _g_on_write
 cdef void _c_on_read():
@@ -118,3 +119,6 @@ cdef class bfx_Program:
         self._program.run()
     def build(self):
         return self._program.build()
+
+cpdef void bfx_load_plugin(string dir, bool overwrite = False):
+    load_plugin(dir.c_str(), overwrite)
