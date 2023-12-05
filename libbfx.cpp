@@ -214,14 +214,35 @@ char *string_format(const char *__msg, const REST &...args)
     return buffer;
 }
 
+#ifndef BFX_PLUGIN_BUILD
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+std::vector<HMODULE> loaded_modules;
+#else
+std::vector<void *> loaded_modules;
+#endif
+#endif
+
+void bfx_exit(int status)
+{
+#ifndef BFX_PLUGIN_BUILD
+    for (uint64_t ind = 0; ind < loaded_modules.size(); ind++)
+    {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        FreeLibrary(loaded_modules.at(ind));
+#else
+        dlclose(loaded_modules.at(ind));
+#endif
+    }
+#endif
+    exit(status);
+}
+
 Traceback::Traceback(FILE *__stderr = stderr)
 {
     this->__stderr = __stderr;
 }
 void Traceback::raise(Exceptions __exc = Exceptions::Exception, const char *__msg = "")
 {
-    if (this->throw_exc)
-        throw std::runtime_error(string_format("%s: %s", exception_to_string(__exc), __msg));
     if (strcmp(__msg, "") != 0)
     {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
@@ -244,7 +265,7 @@ void Traceback::raise(Exceptions __exc = Exceptions::Exception, const char *__ms
         std::cerr << "\033[1;31m" << exception_to_string(__exc) << "\033[0m\n";
 #endif
     }
-    exit(__exc);
+    bfx_exit(__exc);
 }
 
 void Traceback::raise(ExceptionStr __exc)
@@ -484,6 +505,8 @@ std::string Environment::build()
     res.pop_back();
     return res;
 }
+
+#ifndef BFX_PLUGIN_BUILD
 
 Traceback __tb(stderr);
 
@@ -1087,4 +1110,80 @@ Structure::Structure(const char *__src)
 }
 
 Program::Program(Structure *main_struct, iostream *_stream = NULL, std::function<void()> _on_read = [](){}, std::function<void()> _on_write = [](){}) : Environment({{0, 0, main_struct, false, main_struct->tree}}, _stream, _on_read, _on_write){}
+
+void load_plugin(const char *dir, bool overwrite = false)
+{
+    load_structures_func load_structures = NULL;
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+    HMODULE hModule = LoadLibrary(dir);
+
+    if (!hModule)
+    {
+        DWORD error_code = GetLastError();
+        __tb.raise(InternalError, string_format("error on loading '%s': %s", dir, std::system_error(error_code).what()));
+    }
+
+    load_structures = (load_structures_func)GetProcAddress(hModule, "load_structures");
+#else
+    void* hModule = dlopen(dir, RTLD_LAZY);
+
+    if (!hModule)
+    {
+        __tb.raise(InternalError, string_format("error on loading '%s': %s", dir, (const char *)dlerror()));
+    }
+
+    load_structures = (load_structures_func)(dlsym(hModule, "load_structures"));
+#endif
+
+    loaded_modules.push_back(hModule);
+
+    if (!load_structures)
+    {
+        __tb.raise(InternalError, string_format("error on loading '%s': load_structures symbol not found", dir));
+    }
+
+    std::vector<Structure *> loaded_structures;
+    load_structures(&loaded_structures);
+
+    bool is_loaded = false;
+    
+    for (uint64_t ls_ind = 0; ls_ind < loaded_structures.size(); ls_ind++)
+    {
+        for (uint64_t s_ind = 0; s_ind < structers.size(); s_ind++)
+        {
+            if (!strcmp(loaded_structures[ls_ind]->name, structers[s_ind]->name))
+            {
+                if (overwrite)
+                {
+                    structers[s_ind] = loaded_structures[ls_ind];
+                    is_loaded = true;
+                    break;
+                }
+                else
+                {
+                    __tb.raise(InternalError, string_format("error on loading '%s': %s structure has been rewritten (Permission Denied)", dir, loaded_structures[ls_ind]->name));
+                }
+            }
+        }
+
+        if (!is_loaded)
+        {
+            structers.push_back((loaded_structures[ls_ind]));
+            is_loaded = false;
+        }
+    }
+}
+
+#else
+
+void load_structures(std::vector<Structure *> *struct_list)
+{
+    for (uint64_t ind = 0; ind < structers.size(); ind++)
+    {
+        struct_list->push_back(structers.at(ind));
+    }
+}
+
+#endif
 #endif

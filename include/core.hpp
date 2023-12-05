@@ -15,8 +15,6 @@ char g_readKey();
 #include <filesystem>
 #include <windows.h>
 #include <conio.h>
-
-HANDLE hConsole;
 #endif
 
 enum Exceptions

@@ -17,6 +17,8 @@ char g_readKey();
 #include <filesystem>
 #include <windows.h>
 #include <conio.h>
+#else
+#include <dlfcn.h>
 #endif
 
 struct line_addr
@@ -58,11 +60,12 @@ struct ExceptionStr
     char *msg;
 };
 
+void bfx_exit(int);
+
 class Traceback
 {
     FILE *__stderr;
 public:
-    bool throw_exc = true;
     Traceback(FILE *);
     void raise(Exceptions, const char *);
     void raise(ExceptionStr);
@@ -121,6 +124,8 @@ using detect_func = std::function<bool(STR_DATA *)>;
 using react_func = std::function<void(Environment *, STR_DATA *)>;
 using build_func = std::function<std::string(STR_DATA *)>;
 using signal_func = std::function<void()>;
+
+typedef void (*load_structures_func)(std::vector<Structure *> *);
 
 class Environment
 {
@@ -192,4 +197,17 @@ class Program : public Environment
 public:
     Program(Structure *, iostream *, std::function<void()>, std::function<void()>);
 };
+
+#ifdef BFX_PLUGIN_BUILD
+
+extern "C"
+{
+    void load_structures(std::vector<Structure *> *);
+}
+
+#else
+
+void load_plugin(const char *, bool);
+
+#endif
 #endif

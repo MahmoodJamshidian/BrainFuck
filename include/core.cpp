@@ -14,7 +14,7 @@ char g_readKey()
     return (char)_getch();
 }
 
-hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 #else
 char g_readKey()
 {
@@ -268,4 +268,8 @@ Structure S_CALL_FUNC([](Environment *env, STR_DATA *str)
         env->functions[env->memory[env->pointers[env->selected_pointer]]].pointers.clear();
     }
 );
+#endif
+
+#ifdef BFX_LOAD_PLUGINS
+#include "_load_plugins.hpp"
 #endif

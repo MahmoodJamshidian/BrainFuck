@@ -1,8 +1,12 @@
 #include <string>
 #include <string.h>
+#include <filesystem>
 
 #ifndef BFX_PATH_HEADER
 #define BFX_PATH_HEADER
+
+namespace fs = std::filesystem;
+
 #if defined(_WIN32)
     #include <windows.h>
     #include <Shlwapi.h>
@@ -29,6 +33,6 @@
 
 #endif
 
-std::string getExecutablePath();
-std::string getExecutableDir();
+fs::path getExecutablePath();
+fs::path getExecutableDir();
 #endif
