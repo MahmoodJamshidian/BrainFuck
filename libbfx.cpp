@@ -1121,7 +1121,14 @@ void load_plugin(const char *dir, bool overwrite = false)
     if (!hModule)
     {
         DWORD error_code = GetLastError();
-        __tb.raise(InternalError, string_format("error on loading '%s': %s", dir, std::system_error(error_code).what()));
+        WCHAR error_msg[256];
+        DWORD chr_len = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code, 0, (LPSTR)error_msg, sizeof(error_msg), NULL);
+
+        if (chr_len > 0) {
+            __tb.raise(InternalError, string_format("error on loading '%s': %s", dir, error_msg));
+        } else {
+            __tb.raise(InternalError, string_format("error on loading '%s': Unknown error (code: %i)", dir, error_code));
+        }
     }
 
     load_structures = (load_structures_func)GetProcAddress(hModule, "load_structures");
