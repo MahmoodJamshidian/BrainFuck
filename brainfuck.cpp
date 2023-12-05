@@ -188,11 +188,14 @@ int main(int argc, char const *argv[])
 
         std::string lin;
 
-        while (plugin_list_file >> lin)
+        while (std::getline(plugin_list_file, lin))
         {
-            if (lin[0] != '#')
+            if (lin.size())
             {
-                plugins.push_back(lin);
+                if (lin[0] != '#')
+                {
+                    plugins.push_back(lin);
+                }
             }
         }
 
